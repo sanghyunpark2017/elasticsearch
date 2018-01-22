@@ -1,0 +1,33 @@
+input {
+  file {
+    type => "apache"
+    path => "/root/logstashConf/sds/server1/localhost_access_log.*"
+    start_position => "beginning"
+    sincedb_path => "/dev/null"
+  }
+}
+
+filter {
+
+  grok {
+    match => { "message" => "%{COMMONAPACHELOG}" }
+  }
+
+  date {
+    match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
+  }
+
+  geoip {
+    source => "clientip"
+  }
+
+}
+
+output {
+  elasticsearch { hosts => "http://localhost:9200"
+  index => "apache-sds-server1"
+  }
+
+#  stdout { codec => rubydebug }
+}
+
