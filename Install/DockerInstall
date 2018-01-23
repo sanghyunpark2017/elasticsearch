@@ -98,8 +98,9 @@ networks:
 ########################
 
 
-
-
+mkdir /root/es-kibana
+vi /root/es-kibana/docker-compose.yaml
+----------------------------------------------------
 version: '2'
 services:
   kibana:
@@ -112,7 +113,10 @@ services:
     networks:
       - esnet
 networks:
-esnet:
+  esnet:
+----------------------------------------------------
+
+docker-compose up -d
 
 
 
@@ -121,7 +125,164 @@ esnet:
 #LOGSTASH설치
 ########################
 
-docker run --rm -it -v ~/pipeline/:/usr/share/logstash/pipeline/ docker.elastic.co/logstash/logstash:6.1.1
+docker run --name logstash01 -dit centos /bin/sh
+
+docker exec -it logstash01 /bin/sh
+
+yum install -y wget
+yum install -y unzip
+
+cd /opt/
+
+wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz"
+
+tar xzf jdk-8u131-linux-x64.tar.gz
+cd /opt/jdk1.8.0_131/
+
+alternatives --install /usr/bin/java java /opt/jdk1.8.0_131/bin/java 2
+
+alternatives --config java
+
+clear
+java -version
+export JAVA_HOME=/opt/jdk1.8.0_131
+export JRE_HOME=/opt/jdk1.8.0_131/jre
+export PATH=$PATH:/opt/jdk1.8.0_131/bin:/opt/jdk1.8.0_131/jre/bin
+
+
+#MSSQL JDBC
+cd ~
+wget http://10.10.63.63:8089/sqljdbc_6.0.8112.100_kor.tar.gz
+tar xvf sqljdbc_6.0.8112.100_kor.tar.gz
+ls /root/sqljdbc_6.0/kor/jre8
+
+
+
+
+
+cat << EOF >> /root/.bash_profile
+export JAVA_HOME=/opt/jdk1.8.0_131
+export JRE_HOME=/opt/jdk1.8.0_131/jre
+export PATH=$PATH:/opt/jdk1.8.0_131/bin:/opt/jdk1.8.0_131/jre/bin
+EOF
+
+
+
+
+mkdir -p /app
+cd /app
+wget  http://10.10.63.63:8089/logstash-6.1.1.zip
+
+
+unzip logstash-6.1.1.zip
+
+cd /app/logstash-6.1.1/bin
+
+#Case1. 대화형 IN/OUT
+
+vi logstash.conf
+----------------------------------------------------------
+input { stdin { } }
+output {
+  elasticsearch { hosts => ["x.x.x.x:9200"] }
+  stdout { codec => rubydebug }
+}
+----------------------------------------------------------
+
+cd /app/logstash-6.1.1/bin
+
+./logstash -f logstash.conf
+
+#Case2. MSSQL 테스트 & 기초데이터(Win32_OS)
+
+vi logstash-mssql-test.conf
+--------------------------------------------------------------------------------------------------------------------------------------------
+input {
+jdbc {
+jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
+jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
+jdbc_user => "kibana_systemcenter"
+  jdbc_password => "P@ssw5rd"
+statement => "select os_name, os_desc, os_installed from tbl_win32_os"
+  }
+}
+
+output {
+  elasticsearch {
+  "hosts" => ["10.10.64.65:9200"]
+  "index" => "win32-os"
+"document_type" => "data"
+}
+  stdout { codec => rubydebug }
+}
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+./logstash -f logstash-mssql-test.conf
+
+
+
+
+#Case2. MSSQL 테스트 & 기초데이터(Subway)
+
+#Chrome kibana console
+PUT /subway_in
+
+PUT subway_in/_mapping/dataforcustomer
+{"properties": 
+{
+"@timestamp": { "type": "date", "format": "strict_date_optional_time||epoch_millis" },
+"@version": { "type": "text" },
+"mydate": { "type": "date" },
+"id":{ "type": "integer" },
+"cnt":{ "type": "integer" },
+"xpoint_wgs" : { "type": "float" },
+"ypoint_wgs" : { "type": "float" },
+"station_nm" : { "type": "keyword" }, 
+"line_num":{ "type": "integer" },
+"location": { "type": "geo_point" }
+}
+}
+
+
+
+
+cd /app/logstash-6.1.1/bin
+
+vi  logstash-mssql-subway.conf
+--------------------------------------------------------------------------------------------------------------------------------------------
+input {
+jdbc {
+jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
+jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
+jdbc_user => "kibana_systemcenter"
+jdbc_password => "P@ssw5rd"
+statement => "select * from subway_in_geo"
+jdbc_paging_enabled => "true"
+jdbc_page_size => "50000"
+}
+}
+filter {
+mutate {
+add_field => { "[location][lat]" => [ "%{xpoint_wgs}" ] }
+add_field => { "[location][lon]" => [ "%{ypoint_wgs}" ] }
+convert => [ "[location]", "float" ]
+}
+}
+output {
+elasticsearch {
+hosts => "X.X.X.X:9200"
+index => "subway_in"
+#document_id => "%{id}"
+document_type => "dataforcustomer"
+manage_template => true
+}
+#stdout { codec => rubydebug }
+}
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+./logstash -f logstash-mssql-subway.conf
 
 
 
