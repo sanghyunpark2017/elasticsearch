@@ -1,4 +1,23 @@
 
+yum install -y docker
+yum install -y docker-compose
+
+폴더를 만들고 파일명을 디폴트인 docker-compose.yaml로 만든다
+그런 다음 그 디렉토리 안에서 데몬으로 실행하고
+docker-compose up -d
+
+로그를 보면서 정상구동 되는지 확인한다
+docker-compose logs -f
+
+ctrl+c로 로그 보는 것을 마치고 구동상태 확인 (물론 docker ps로도 확인 가능)
+docker-compose ps
+
+크롬 헤드 확장프로그램에서 접속테스트
+
+서비스종료 후 삭제
+docker-compose stop
+docker-compose rm 
+
 
 version: '2.2'
 services:
