@@ -29,7 +29,7 @@ done
 ------------------------------------------------------------
 
 
-yum install net-tools
+yum install -y net-tools
 
 
 
