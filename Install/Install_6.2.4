@@ -133,10 +133,14 @@ node.master: false
 node.data: true
 node.ingest: true
 #bootstrap.memory_lock: true
-discovery.zen.ping.unicast.hosts: ["10.10.64.67:9300", "10.10.64.68:9300",  "10.10.64.69:9300", "10.10.64.70:9300", "10.10.64.71:9300", "10.10.64.72:9300"]
+discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300"]
 #discovery.zen.mininum_master_nodes: 2
 #action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
 EOF
+
+cat /etc/elasticsearch/elasticsearch.yml
+
+
 
 #action.auto_create_index 항목은 xpack 설치 후 쓰는 것이고 지금은 오류가 발생하니 주석처리해 둔다
 
@@ -149,6 +153,7 @@ sudo systemctl status elasticsearch.service
 
 크롬 헤드로 접속하여 클러스터와 노드들 확인
 http://t1velk1.homeplusnet.co.kr:9200
+http://10.10.64.91:9200
 
 
 #################################
