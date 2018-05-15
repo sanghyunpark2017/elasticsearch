@@ -358,6 +358,32 @@ cd /usr/share/logstash/bin
 
 
 
+#################################
+패러미터 조정 
+#################################
+
+#java heap
+전체 메모리의 50%는 java heap, 나머지 50%는 루씬 파일 캐시에 사용
+java heap 크기 조정
+
+vi /etc/elasticsearch/jvm.options
+-Xms1g
+-Xmx1g
+
+
+#swap off
+swapoff -a
+
+#파일
+cat << EOF >> /etc/security/limits.conf
+elasticsearch soft memlock unlimited
+elasticsearch hard memlock unlimited
+EOF
+
+
+
+
+
 
 
 
