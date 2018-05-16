@@ -2,6 +2,12 @@
 
 키바나 HA, 코디네이팅/ingest 역활은 데이터노드가 수행토록한다.
 
+1번호스트 : master
+2번호스트 : data, ingest
+3번호스트 : data, ingest
+4번호스트 : data, ingest
+5번호스트 : coordinating
+
 #################################
 OS BASIC
 #################################
@@ -124,7 +130,8 @@ http.cors.allow-headers: Authorization       #for head & XPACK
 transport.tcp.port: 9300 
 node.master: true
 node.data: false
-node.ingest: true
+node.ingest: false
+search.remote.connect: false
 #bootstrap.memory_lock: true
 discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300"]
 #discovery.zen.mininum_master_nodes: 2
@@ -148,20 +155,24 @@ http.cors.allow-headers: Authorization       #for head & XPACK
 transport.tcp.port: 9300 
 node.master: false
 node.data: true
-node.ingest: false
+node.ingest: true
+search.remote.connect: false
 #bootstrap.memory_lock: true
 discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300"]
 #discovery.zen.mininum_master_nodes: 2
 #action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
 EOF
 
-
-
 cat /etc/elasticsearch/elasticsearch.yml
 
 #action.auto_create_index 항목은 xpack 설치 후 쓰는 것이고 지금은 오류가 발생하니 주석처리해 둔다
 
 
+#################################
+Ingest / Cordinate node
+#################################
+Ingest node 설정 : node.ingest: false
+coordinating node 설정 : master, data, ingest 모두 false 
 
 
 마스터/노드 모든 서버에 서비스를 기동하고 크롬 헤드에서 정상 확인
