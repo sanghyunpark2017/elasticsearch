@@ -1,0 +1,12 @@
+
+
+압축파일을 아래 위치에 풀기
+c:\program files\Winlogbeat
+
+파워쉘 administrator 권한으로 실행
+cd c:\program files\Winlogbeat
+PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.ps1.
+
+
+
+
