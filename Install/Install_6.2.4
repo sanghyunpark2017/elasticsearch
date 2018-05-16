@@ -242,9 +242,11 @@ cd /usr/share/kibana/bin
 
 주의!!! elasticsearch의 x-pack에 security disable 했으므로 kibana도 아래 처럼 명시적으로 disable
 옵션을 넣어주면 특별한 오류 없이 TCP 5601 포트로 리슨되지 않게 됨 (파일 맨뒤에 추가)
+옵션 xpack.monitoring.enabled: true는 처음 실행 시 수 분 소요됨 (CPU High)
+
 cat << EOF >> /etc/kibana/kibana.yml
 xpack.security.enabled: false
-xpack.monitoring.enabled: false
+xpack.monitoring.enabled: true
 EOF
 
 파일소유권변경
