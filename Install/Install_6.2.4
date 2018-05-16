@@ -1,3 +1,7 @@
+
+
+키바나 HA, 코디네이팅/ingest 역활은 데이터노드가 수행토록한다.
+
 #################################
 OS BASIC
 #################################
@@ -107,7 +111,7 @@ sudo systemctl enable elasticsearch.service
 >elasticsearch 데몬 중지 상태 유지
 
 #################################
-마스터서버
+Master
 #################################
 
 cat << EOF >> /etc/elasticsearch/elasticsearch.yml
@@ -120,7 +124,7 @@ http.cors.allow-headers: Authorization       #for head & XPACK
 transport.tcp.port: 9300 
 node.master: true
 node.data: false
-node.ingest: false
+node.ingest: true
 #bootstrap.memory_lock: true
 discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300"]
 #discovery.zen.mininum_master_nodes: 2
@@ -131,7 +135,7 @@ cat /etc/elasticsearch/elasticsearch.yml
 
 
 #################################
-나머지 노드서버
+Data nodes
 #################################
 
 cat << EOF >> /etc/elasticsearch/elasticsearch.yml
@@ -144,7 +148,7 @@ http.cors.allow-headers: Authorization       #for head & XPACK
 transport.tcp.port: 9300 
 node.master: false
 node.data: true
-node.ingest: true
+node.ingest: false
 #bootstrap.memory_lock: true
 discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300"]
 #discovery.zen.mininum_master_nodes: 2
@@ -156,6 +160,7 @@ EOF
 cat /etc/elasticsearch/elasticsearch.yml
 
 #action.auto_create_index 항목은 xpack 설치 후 쓰는 것이고 지금은 오류가 발생하니 주석처리해 둔다
+
 
 
 
@@ -275,57 +280,8 @@ http://masterip:5601
 #################################
 X-PACK BASIC License 적용 (마스터서버 only)
 #################################
+이전 버전 참조
 
-
-X-PACK은 기본 적으로 Trial 1달임. 이 것을 임시 라이선스 발급 받아서 적용하면
-1년간 FULL 버전 사용할 수 있음
-
-
-홈페이지에서 라이선스 등록 (메일주소, 회사이름 제공)하면 메일로 라이선스 등등 보내줌
-
-
-=============================================================
-Thank you for using the Elastic Stack and registering for your free Basic license! This license expires on January  2, 2019.
-
-To download your license, please go to:
-
---> http://license.elastic.co/registration/download/93a5ab7e-e54b-4ed2-87b8-2c34cc0814d7
-
-For license installation instructions:
-
-Elasticsearch 6.x -- https://www.elastic.co/guide/en/x-pack/current/installing-license.html
-Elasticsearch 5.x -- https://www.elastic.co/guide/en/x-pack/5.6/installing-license.html
-Elasticsearch 2.x -- https://www.elastic.co/guide/en/marvel/current/license-management.html
-Elasticsearch 1.x -- Use license code '1010' to register
-
-If you have any questions or issues, please visit us on the forums: https://discuss.elastic.co/ or reach out to us directly at info@elastic.co.
-
-Best,
-The Elastic Team
-
---
-http://elastic.co
-=============================================================
-
-첫번째 URL에 접속하여 Agree 하면 라이선스 다운로드 페이지가 오픈되고
-confirm 메일에서 ok 하면 1년 짜리 라이선스 다운로드 받음
-
-다운로드 받은 라이선스 파일을 마스터 서버에 넣어 놓고
-아래와 같이 실행하면 라이선스가 1개월 Trial에서 1년 BASIC으로 변경 됨
-
-
-cd ~
-wget  http://10.10.63.63:8089/sanghyun-park.json.zip
-mv sanghyun-park.json.zip sanghyun-park.json
-
-현재 1개월 trial 버전임
-curl -XGET 'http://10.10.64.67:9200/_xpack/license'
-
-라이선스 갱신함
-curl -XPUT 'http://10.10.64.67:9200/_xpack/license?acknowledge=true' -H "Content-Type: application/json" -d @sanghyun-park.json
-
-다시 확인해 보면 1년 Basic으로 변경됨
-curl -XGET 'http://10.10.64.67:9200/_xpack/license'
 
 #################################
 마스터서버에 LOG STASH 설치(데몬)
