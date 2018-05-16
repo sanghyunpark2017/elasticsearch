@@ -391,7 +391,41 @@ elasticsearch hard memlock unlimited
 EOF
 
 
+#################################
+백업 / 리셋&복구
+#################################
 
+
+#데이터노드백업
+
+systemctl stop kibana
+systemctl stop elasticsearch
+
+cd ~
+tar cvfzp elastic_data_initial.tar.gz /var/lib/elasticsearch/nodes/
+
+systemctl start elasticsearch
+systemctl start kibana
+
+
+
+#데이터노드 리셋&복구
+
+#모든 노드 서비스 중지
+systemctl stop kibana
+systemctl stop elasticsearch
+
+
+
+rm -rf /var/lib/elasticsearch/nodes
+mkdir -p /var/lib/elasticsearch/nodes
+chown elasticsearch:elasticsearch /var/lib/elasticsearch/nodes
+
+cd /
+tar xvfzp /root/elastic_data_initial.tar.gz 
+
+systemctl start elasticsearch
+systemctl start kibana
 
 
 
