@@ -13,8 +13,10 @@ OS BASIC
 #################################
 
 cd ~
-vi .bashrc
+cat << EOF >> .bashrc
 export LS_COLORS="di=00;36:fi=00;37"
+EOF
+
 
 
 
@@ -171,8 +173,34 @@ cat /etc/elasticsearch/elasticsearch.yml
 #################################
 Ingest / Cordinate node
 #################################
-Ingest node 설정 : node.ingest: false
-coordinating node 설정 : master, data, ingest 모두 false 
+#Ingest node 설정 : node.ingest: false
+#coordinating node 설정 : master, data, ingest 모두 false 
+
+cat << EOF >> /etc/elasticsearch/elasticsearch.yml
+cluster.name: hmp-big-data
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-headers: Authorization       #for head & XPACK
+transport.tcp.port: 9300 
+node.master: false
+node.data: false
+node.ingest: false
+search.remote.connect: false
+#bootstrap.memory_lock: true
+discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300"]
+#discovery.zen.mininum_master_nodes: 2
+#action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
+EOF
+
+----------------------------
+
+
+
+
+
+
 
 
 마스터/노드 모든 서버에 서비스를 기동하고 크롬 헤드에서 정상 확인
