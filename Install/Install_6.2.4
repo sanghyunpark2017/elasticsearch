@@ -2,8 +2,6 @@
 OS BASIC
 #################################
 
-
-
 cd ~
 vi .bashrc
 export LS_COLORS="di=00;36:fi=00;37"
@@ -80,6 +78,18 @@ EOF
 #################################
 Install elasticsearch 6.2.4
 #################################
+
+기본 프로그램 ($ES_HOME) : /usr/share/elasticsearch
+실행 파일 : bin/elasticsearch
+플러그인 : plugins
+설정 : /etc/elasticsearch
+./elasticsearch.yml
+./jvm.options
+./log4j2.properties
+데이터 (path.data) : /var/lib/elasticsearch
+로그 (path.logs) : /var/log/elasticsearch
+
+
 
 마스터서버 1대, 노드 3대 모두 설치
 
