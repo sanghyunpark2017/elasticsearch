@@ -1,0 +1,7 @@
+
+
+
+GET /_cat/indices?v
+
+
+
