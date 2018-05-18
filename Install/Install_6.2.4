@@ -383,7 +383,7 @@ systemctl stop kibana
 systemctl stop elasticsearch
 
 cd ~
-tar cvfzp elastic_data_initial.tar.gz /var/lib/elasticsearch/nodes/
+tar cvfzp elastic_data_initial-`date +%Y%m%d%H%`.tar.gz /var/lib/elasticsearch/nodes/
 
 systemctl start elasticsearch
 systemctl start kibana
