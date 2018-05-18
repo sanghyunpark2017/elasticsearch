@@ -48,7 +48,13 @@ winlogbeat.event_logs:
   - name: Security
     ignore_older: 10m
     event_id: 4720, 4722, 4723, 4724, 4725, 4726, 4738, 4740, 4767, 4781, 4634, 4624, 4625, 4648
-    
+
+#보안로그 heavy
+#queue.mem:
+#  events: 4096
+#  flush.min_events: 512
+#  flush.timeout: 5s
+
 output.elasticsearch:
   hosts:
     - 10.10.64.91:9200
@@ -61,6 +67,27 @@ logging.files:
   path: C:/ProgramData/winlogbeat/Logs
 logging.level: info
 
+
+
+######################################
+이벤트 세부
+######################################
+
+#4625	계정에 로그온 하지 못했습니다.
+Status : 0xc000006d
+SubStatus: 
+0xC0000064	user name does not exist
+0xC000006A	user name is correct but the password is wrong
+0xC0000234	user is currently locked out
+0xC0000072	account is currently disabled
+0xC000006F	user tried to logon outside his day of week or time of day restrictions
+0xC0000070	workstation restriction, or Authentication Policy Silo violation (look for event ID 4820 on domain controller)
+0xC0000193	account expiration
+0xC0000071	expired password
+0xC0000133	clocks between DC and other computer too far out of sync
+0xC0000224	user is required to change password at next logon
+0xC0000225	evidently a bug in Windows and not a risk
+0xc000015b	The user has not been granted the requested logon type (aka logon right) at this machine
 
 
 
