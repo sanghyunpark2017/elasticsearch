@@ -40,7 +40,8 @@ PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.
 4624	계정을 성공적으로 로그온 했습니다.
 4625	계정에 로그온 하지 못했습니다.
 4648	명시적 자격 증명을 사용하여 로그온을 시도 했습니다.
-
+4720	사용자 계정을 만들었습니다.
+4726	사용자 계정이 삭제 되었습니다.
 
 
 
