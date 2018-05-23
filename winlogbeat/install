@@ -50,6 +50,12 @@ PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.
 10.10.24.80 win2008
 10.10.38.22 win2012
 
+#########################################################
+예외 처리
+#########################################################
+과도한 이벤트 서버 : AD, Exchange CAS
+과도한 이벤트 ID : 4648
+
 
 #########################################################
 #표준설정
@@ -59,7 +65,8 @@ PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.
 winlogbeat.event_logs:
   - name: Security
     ignore_older: 10m
-    event_id: 4720, 4722, 4723, 4724, 4725, 4726, 4738, 4740, 4767, 4781, 4634, 4624, 4625, 4648
+#    event_id: 4720, 4722, 4723, 4724, 4725, 4726, 4738, 4740, 4767, 4781, 4634, 4624, 4625, 4648
+    event_id: 4624, 4625, 4720, 4726
 
 #보안로그 heavy
 #queue.mem:
