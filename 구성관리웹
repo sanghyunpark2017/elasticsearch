@@ -33,28 +33,6 @@ cd /usr/share/logstash/bin
 
 ./logstash -f ./logstash-mssql-applist.conf
 
-
-##############
-#alias
-##############
-#create index alias
-POST /_aliases
-{
-    "actions" : [
-        { "add" : { "index" : "applications", "alias" : "myapplist" } }
-    ]
-}
-
-#delete index alias
-POST /_aliases
-{
-    "actions" : [
-        { "remove" : { "index" : "applications", "alias" : "myapplist" } }
-    ]
-}
-
-
-
 ##############
 #인덱스 생성
 ##############
@@ -109,9 +87,44 @@ Buckets : usage(20)
 Buckets : wrnt(30)
 
 
+################################################################################
+################################################################################
+##### 인덱스 날짜 지정 및 스케쥴드 롤딩 업데이트
+################################################################################
+################################################################################
 
+#인덱스에 날짜/시간 지정 
+#applications-2018.05.28-11.33
 
+vi  logstash-mssql-applist.conf
+--------------------------------------------------------------------------------------------------------------------------------------------
+input {
+jdbc {
+jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
+jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
+jdbc_user => "kibana_systemcenter"
+jdbc_password => "********"
+statement => "select * from vw_kibana_applist"
+jdbc_paging_enabled => "true"
+jdbc_page_size => "50000"
+}
+}
 
+output {
+  elasticsearch {
+  "hosts" => ["10.10.64.91:9200"]
+  "index" => "applications-%{+YYYY.MM.dd}"
+"document_type" => "data"
+}
+#  stdout { codec => rubydebug }
+}
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+#test간 생성된 인덱스 정리
+curl -XDELETE http://localhost:9200/applications*
+
+#tbd...
 
 
 
