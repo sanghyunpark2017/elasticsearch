@@ -1,6 +1,6 @@
 
 
-#구성관리웹 뷰 로드
+#구성관리DB에서 데이터 로드
 
 cd /usr/share/logstash/bin
 
@@ -32,6 +32,27 @@ output {
 cd /usr/share/logstash/bin
 
 ./logstash -f ./logstash-mssql-applist.conf
+
+
+##############
+#alias
+##############
+#create index alias
+POST /_aliases
+{
+    "actions" : [
+        { "add" : { "index" : "applications", "alias" : "myapplist" } }
+    ]
+}
+
+#delete index alias
+POST /_aliases
+{
+    "actions" : [
+        { "remove" : { "index" : "applications", "alias" : "myapplist" } }
+    ]
+}
+
 
 
 ##############
