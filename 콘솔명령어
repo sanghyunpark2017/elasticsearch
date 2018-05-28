@@ -1,0 +1,45 @@
+
+#클러스터상태
+GET /_cat/health?v
+
+#노드목록
+GET /_cat/nodes?v
+
+#인덱스목록
+GET /_cat/indices?v
+
+#인덱스등록정보
+GET /.monitoring-kibana-6-2018.05.17/_search
+GET /.monitoring-kibana-6-2018.05.17/_settings
+
+
+#모든인덱스 매핑정보
+GET /_all/_mapping
+GET /_mapping
+
+
+#특정인덱스 매핑정보
+GET /logstash-2018.05.15/_mapping
+
+GET /.monitoring-kibana-6-2018.05.17/_mapping
+
+
+HEAD logstash-2018.05.15
+
+HEAD .monitoring-kibana-6-2018.05.17
+
+#create index alias
+POST /_aliases
+{
+    "actions" : [
+        { "add" : { "index" : "applications", "alias" : "myapplist" } }
+    ]
+}
+
+#delete index alias
+POST /_aliases
+{
+    "actions" : [
+        { "remove" : { "index" : "applications", "alias" : "myapplist" } }
+    ]
+}
