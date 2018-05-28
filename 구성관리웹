@@ -34,6 +34,54 @@ cd /usr/share/logstash/bin
 ./logstash -f ./logstash-mssql-applist.conf
 
 
+##############
+#인덱스 생성
+##############
+applications*
+
+##############
+#Graph 생성1
+##############
+
+첫째, 카토고리1/2/3 어플리케이션 맵 : category1(10), category2(50), category3(90)
+둘째, 카테고리3 어플리케이션 맵 : category3(20), nost_nm(90)
+
+##############
+#비쥬얼 생성
+##############
+
+#app_OS_heatmap 
+X-Axis : os_ver
+Y-Axis : os
+
+#app_HWTYPE_table
+Buckets : hw_type(20), hw_de(20)
+
+#app_OSver_pie
+Buckets : os_ver(30)
+
+#app_OSver_tag
+Buckets : os_ver(30)
+
+#app_Service_tag
+Buckets : usage(30)
+
+#app_Service_table
+Buckets : usage(20)
+SubBucket : os(30)
+
+#app_Service_pie
+Buckets : usage(20)
+
+#app_hweos_vbar
+Buckets : wrnt(30)
+
+
+
+
+
+
+
 
 
 
