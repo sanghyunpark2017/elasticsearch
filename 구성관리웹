@@ -1,0 +1,41 @@
+
+
+#구성관리웹 뷰 로드
+
+cd /usr/share/logstash/bin
+
+vi  logstash-mssql-applist.conf
+--------------------------------------------------------------------------------------------------------------------------------------------
+input {
+jdbc {
+jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
+jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
+jdbc_user => "kibana_systemcenter"
+jdbc_password => "********"
+statement => "select * from vw_kibana_applist"
+jdbc_paging_enabled => "true"
+jdbc_page_size => "50000"
+}
+}
+
+output {
+  elasticsearch {
+  "hosts" => ["10.10.64.91:9200"]
+  "index" => "applications"
+"document_type" => "data"
+}
+#  stdout { codec => rubydebug }
+}
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+cd /usr/share/logstash/bin
+
+./logstash -f ./logstash-mssql-applist.conf
+
+
+
+
+
+
+
