@@ -1,4 +1,10 @@
 
+#delete index/indics
+curl -XDELETE http://localhost:9200/.monitoring-kibana*
+curl -XDELETE http://localhost:9200/.monitoring-es*
+curl -XDELETE http://localhost:9200/.watcher-history*
+
+
 
 
 GET /_cat/indices?v
