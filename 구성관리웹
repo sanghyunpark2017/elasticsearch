@@ -50,6 +50,8 @@ applications*
 #비쥬얼 생성
 ##############
 
+저장할 때 필터링 없이 저장할 것!
+
 #app_OS_heatmap 
 X-Axis : os_ver
 Y-Axis : os
