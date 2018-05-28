@@ -1,0 +1,34 @@
+
+
+
+
+vi  logstash-mssql-weekly-margin-2017.conf
+--------------------------------------------------------------------------------------------------------------------------------------------
+input {
+jdbc {
+jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
+jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
+jdbc_user => "kibana_systemcenter"
+jdbc_password => "P@ssw5rd"
+statement => "select * from weekly_margin_2017"
+jdbc_paging_enabled => "true"
+jdbc_page_size => "50000"
+}
+}
+
+output {
+  elasticsearch {
+  "hosts" => ["10.10.64.65:9200"]
+  "index" => "weekly-margin-2017"
+"document_type" => "data"
+}
+#  stdout { codec => rubydebug }
+}
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+
+./logstash -f logstash-mssql-margin.conf
+
+
+
