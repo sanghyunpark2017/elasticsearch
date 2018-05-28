@@ -43,8 +43,17 @@ applications*
 #Graph 생성1
 ##############
 
-첫째, 카토고리1/2/3 어플리케이션 맵 : category1(10), category2(50), category3(90)
-둘째, 카테고리3 어플리케이션 맵 : category3(20), nost_nm(90)
+#app_category_all
+index : applications*
+fields : category1(10), category2(50), category3(90)
+settings : certainty : 1
+1
+#app_category_3
+index : applications*
+fields: category3(20), nost_nm(99)
+settings : certainty : 1
+
+
 
 ##############
 #비쥬얼 생성
