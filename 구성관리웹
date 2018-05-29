@@ -65,26 +65,38 @@ X-Axis : os_ver
 Y-Axis : os
 
 #app_HWTYPE_table
-Buckets : hw_type(20), hw_de(20)
+Split Rows : hw_type(20)
+SubBucket : hw_de(20)
 
 #app_OSver_pie
-Buckets : os_ver(30)
+Split Slices : os_ver(30)
 
 #app_OSver_tag
-Buckets : os_ver(30)
+Tags : os_ver(30)
 
 #app_Service_tag
-Buckets : usage(30)
+Tags : usage(30)
 
 #app_Service_table
-Buckets : usage(20)
+Splic Rows : usage(20)
 SubBucket : os(30)
 
 #app_Service_pie
-Buckets : usage(20)
+Split Slices : usage(20)
 
 #app_hweos_vbar
-Buckets : wrnt(30)
+X-Axis : wrnt(30)
+
+
+#################
+### 대시보드 구성
+#################
+이름 : Dashboard_Applications
+
+첫째줄 : app_OSver_pie, app_Service_pie
+둘째줄 : app_OSver_tag, app_Service_tag
+셋째줄 : app_HWTYPE_table, app_Service_table
+넷째줄 : app_OS_heatmap, app_hweos_vbar (높이 늘리기)
 
 
 ################################################################################
