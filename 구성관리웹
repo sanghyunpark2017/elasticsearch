@@ -1,6 +1,7 @@
 
-
-#구성관리DB에서 데이터 로드
+###############################################
+#구성관리DB에서 데이터 로드(어플리케이션목록)
+###############################################
 
 cd /usr/share/logstash/bin
 
@@ -13,7 +14,7 @@ jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
 jdbc_user => "kibana_systemcenter"
 jdbc_password => "********"
-statement => "select * from vw_kibana_applist"
+statement => "select * from tbl_kibana_applist"
 jdbc_paging_enabled => "true"
 jdbc_page_size => "50000"
 }
@@ -23,20 +24,72 @@ output {
   elasticsearch {
   "hosts" => ["10.10.64.91:9200"]
   "index" => "applications"
-"document_type" => "data"
+  #"document_type" => "data"
 }
 #  stdout { codec => rubydebug }
 }
 --------------------------------------------------------------------------------------------------------------------------------------------
 
+#기존 document "applications" 삭제
+curl -XDELETE http://localhost:9200/applications*
+
+#데이터전송(MSSQL -> Elasticsearch)
+./logstash -f ./logstash-mssql-applist.conf
+
+###############################################
+#구성관리DB에서 데이터 로드(가상서버 목록)
+###############################################
+
 cd /usr/share/logstash/bin
 
-./logstash -f ./logstash-mssql-applist.conf
+vi  logstash-mssql-vmlist.conf
+--------------------------------------------------------------------------------------------------------------------------------------------
+input {
+jdbc {
+jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
+jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
+jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
+jdbc_user => "kibana_systemcenter"
+jdbc_password => "P*******"
+statement => "select * from tbl_open_vmlist"
+jdbc_paging_enabled => "true"
+jdbc_page_size => "50000"
+}
+}
+
+output {
+  elasticsearch {
+  "hosts" => ["10.10.64.91:9200"]
+  "index" => "vmlist"
+  #"document_type" => "data"
+}
+#  stdout { codec => rubydebug }
+}
+
+#기존 document "applications" 삭제
+curl -XDELETE http://localhost:9200/applications*
+
+#데이터전송(MSSQL -> Elasticsearch)
+./logstash -f ./logstash-mssql-vmlist.conf
+
+
+
+
+
+---- 이하 어플리케이션 데이터/인덱스 위한 셋팅
 
 ##############
 #인덱스 생성
 ##############
-applications*
+applications* > Time Filter(Dont' use)
+vmlist* > Time Filter(Dont' use)
+
+vir_nm="NTNX8k-Homeplus Cluster (운영)"
+
+
+
+
+
 
 ##############
 #Graph 생성1
@@ -51,8 +104,6 @@ settings : certainty : 1
 index : applications*
 fields: category3(20), nost_nm(99)
 settings : certainty : 1
-
-
 
 ##############
 #비쥬얼 생성
@@ -119,7 +170,7 @@ jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
 jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
 jdbc_user => "kibana_systemcenter"
 jdbc_password => "********"
-statement => "select * from vw_kibana_applist"
+statement => "select * from tbl_kibana_applist"
 jdbc_paging_enabled => "true"
 jdbc_page_size => "50000"
 }
@@ -129,7 +180,7 @@ output {
   elasticsearch {
   "hosts" => ["10.10.64.91:9200"]
   "index" => "applications-%{+YYYY.MM.dd}"
-"document_type" => "data"
+  #"document_type" => "data"
 }
 #  stdout { codec => rubydebug }
 }
