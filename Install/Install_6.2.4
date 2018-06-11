@@ -156,11 +156,15 @@ cat /etc/group
 sudo systemctl daemon-reload
 sudo systemctl enable elasticsearch.service
 
+
 >elasticsearch 데몬 중지 상태 유지
 
 #################################
 All server
 #################################
+#path.dat와 path.logs는 주석처리 한다
+vi /etc/elasticsearch/elasticsearch.yml
+
 
 cat << EOF >> /etc/elasticsearch/elasticsearch.yml
 cluster.name: hmp-big-data
@@ -173,11 +177,14 @@ transport.tcp.port: 9300
 node.master: true
 node.data: true
 node.ingest: true
+path.data: /data/elasticsearch/data
+path.logs: /data/elasticsearch/log
 #index.number_of_shards: 5
 #index.number_of_replicas: 1
 discovery.zen.ping_timeout: 10s
-discovery.zen.ping.unicast.hosts: ["10.10.64.91:9300", "10.10.64.92:9300",  "10.10.64.93:9300", "10.10.64.94:9300", "10.10.64.95:9300"]
-discovery.zen.minimum_master_nodes: 3
+discovery.zen.ping.unicast.hosts: ["10.10.62.93:9300", "10.10.62.94:9300",  "10.10.62.95:9300"]
+#discovery.zen.minimum_master_nodes: 3  #for 5 nodes 
+discovery.zen.minimum_master_nodes: 2  #for 3 nodes 
 #action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
 EOF
 
@@ -185,6 +192,10 @@ cat /etc/elasticsearch/elasticsearch.yml
 
 #action.auto_create_index 항목은 xpack 설치 후 쓰는 것이고 지금은 오류가 발생하니 주석처리해 둔다
 
+#변경 디렉토리 소유자 변경
+mkdir -p /data/elasticsearch/data
+mkdir -p /data/elasticsearch/log
+chown elasticsearch:elasticsearch -R /data/elasticsearch
 
 
 마스터/노드 모든 서버에 서비스를 기동하고 크롬 헤드에서 정상 확인
@@ -260,7 +271,7 @@ sudo /bin/systemctl enable kibana.service
 kibana 설정 파일에 리슨방식(All Ip)과 마스터서버를 지정해준다 (파일 맨뒤에 추가)
 cat << EOF >> /etc/kibana/kibana.yml
 server.host: 0.0.0.0
-elasticsearch.url: http://10.10.64.91:9200
+elasticsearch.url: http://10.10.62.93:9200
 EOF
 
 
@@ -268,8 +279,8 @@ kibana x-pack 설치, CPU속도에 따라 오래걸림 (약 10분 전/후로 소
 cd /usr/share/kibana/bin
 ./kibana-plugin install x-pack
 
-주의!!! elasticsearch의 x-pack에 security disable 했으므로 kibana도 아래 처럼 명시적으로 disable
-옵션을 넣어주면 특별한 오류 없이 TCP 5601 포트로 리슨되지 않게 됨 (파일 맨뒤에 추가)
+주의!!! elasticsearch의 x-pack에 security disable 했으므로 kibana도 아래 처럼 
+명시적으로 disable 옵션을 넣어줘야 오류 없이 TCP 5601 포트로 리슨됨 (파일 맨뒤에 추가)
 옵션 xpack.monitoring.enabled: true는 처음 실행 시 수 분 소요됨 (CPU High)
 
 cat << EOF >> /etc/kibana/kibana.yml
@@ -288,6 +299,7 @@ systemctl status elasticsearch
 
 
 마스터서버에 kibana 서비스 시작
+마스터서버 kibana접속(처음 실행 시 TCP 5601 리슨에 수분 소요) 
 systemctl start kibana
 systemctl status kibana
 
@@ -295,7 +307,7 @@ systemctl status kibana
 journalctl -u kibana.service
 
 
-마스터서버 kibana접속(처음 실행 시 TCP 5601 리슨에 수분 소요) 
+마스터서버 kibana접속
 http://masterip:5601
 
 
@@ -383,7 +395,7 @@ systemctl stop kibana
 systemctl stop elasticsearch
 
 cd ~
-tar cvfzp elastic_data_initial-`date +%Y%m%d%H%`.tar.gz /var/lib/elasticsearch/nodes/
+tar cvfzp elastic_data_initial-`date +%Y%m%d%H%`.tar.gz /data/elasticsearch/data/nodes/
 
 systemctl start elasticsearch
 systemctl start kibana
