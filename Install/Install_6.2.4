@@ -80,11 +80,18 @@ done
 yum install -y net-tools
 
 
-systemctl stop firewalld
-systemctl disable firewalld
+#################################
+SWAP Off 및 방화벽설정
+#################################
 
+sysctl -w vm.swappiness=0
 
-
+systemctl enable firewalld
+systemctl start firewalld
+firewall-cmd --permanent --add-port=9200/tcp
+firewall-cmd --permanent --add-port=9300/tcp
+firewall-cmd --permanent --add-port=5601/tcp
+firewall-cmd --reload   
 
 
 #################################
@@ -420,6 +427,10 @@ tar xvfzp /root/elastic_data_initial.tar.gz
 systemctl start elasticsearch
 systemctl start kibana
 
+
+
+
+ 
 
 
 
