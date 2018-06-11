@@ -1,4 +1,8 @@
 
+#MSSQL JDBC드라이버다운로드
+cd ~
+wget http://10.10.63.63:8089/sqljdbc_6.0.8112.100_kor.tar.gz
+tar -xvf sqljdbc_6.0.8112.100_kor.tar.gz
 
 
 
