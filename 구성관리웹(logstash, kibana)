@@ -22,7 +22,7 @@ jdbc_page_size => "50000"
 
 output {
   elasticsearch {
-  "hosts" => ["10.10.64.91:9200"]
+  "hosts" => ["10.10.62.93:9200"]
   "index" => "applications"
   #"document_type" => "data"
 }
@@ -59,7 +59,7 @@ jdbc_page_size => "50000"
 
 output {
   elasticsearch {
-  "hosts" => ["10.10.64.91:9200"]
+  "hosts" => ["10.10.62.93:9200"]
   "index" => "vmlist"
   #"document_type" => "data"
 }
@@ -81,12 +81,10 @@ curl -XDELETE http://localhost:9200/applications*
 ##############
 #인덱스 생성
 ##############
-applications* > Time Filter(Dont' use)
-vmlist* > Time Filter(Dont' use)
+applications* > I don't want to use the Time Filter > Create Index pattern
+vmlist* > I don't want to use the Time Filter > Create Index pattern
 
 vir_nm="NTNX8k-Homeplus Cluster (운영)"
-
-
 
 
 
@@ -97,9 +95,9 @@ vir_nm="NTNX8k-Homeplus Cluster (운영)"
 
 #app_category_all
 index : applications*
-fields : category1(10), category2(50), category3(90)
+fields : category1.keyword(10), category2(50), category3(90)
 settings : certainty : 1
-1
+
 #app_category_3
 index : applications*
 fields: category3(20), nost_nm(99)
