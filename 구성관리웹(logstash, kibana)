@@ -44,42 +44,45 @@ curl -XDELETE http://localhost:9200/applications*
 #데이터전송(MSSQL -> Elasticsearch)
 ./logstash -f ./logstash-mssql-applist.conf
 
+
+
 ###############################################
-#구성관리DB에서 데이터 로드(가상서버 목록, 이 것은 아직 쓰지 않음)
+#crontab -e
 ###############################################
 
-cd /usr/share/logstash/bin
 
-vi  logstash-mssql-vmlist.conf
---------------------------------------------------------------------------------------------------------------------------------------------
-input {
-jdbc {
-jdbc_driver_library => "/root/sqljdbc_6.0/kor/jre8/sqljdbc42.jar"
-jdbc_driver_class => "com.microsoft.sqlserver.jdbc.SQLServerDriver"
-jdbc_connection_string => "jdbc:sqlserver://10.10.63.63:1433"
-jdbc_user => "kibana_systemcenter"
-jdbc_password => "P*******"
-statement => "select * from tbl_open_vmlist"
-jdbc_paging_enabled => "true"
-jdbc_page_size => "50000"
-}
-}
+###elasticsearch & kibana
+50 23 * * * /root/mycron/delete_applications.sh
+51 23 * * * /root/mycron/get_applications.sh
 
-output {
-  elasticsearch {
-  "hosts" => ["10.10.62.93:9200"]
-  "index" => "vmlist"
-  #"document_type" => "data"
-}
-#  stdout { codec => rubydebug }
-}
+59 23 * * * /root/mycron/delete_logs.sh
 
-#기존 document "applications" 삭제
-curl -XDELETE http://localhost:9200/vmlist*
 
-#데이터전송(MSSQL -> Elasticsearch)
-./logstash -f ./logstash-mssql-vmlist.conf
+/root/mycron/delete_logs.sh
+------------------------------------------------------------------------
+#!/bin/sh
 
+curl -XDELETE http://localhost:9200/.monitoring*
+curl -XDELETE http://localhost:9200/.watcher*
+echo delete logs__`date` >> /root/mycron/elastic_history.log
+------------------------------------------------------------------------
+
+
+/root/mycron/delete_applications.sh
+------------------------------------------------------------------------
+#!/bin/sh
+
+curl -XDELETE http://localhost:9200/applications*
+echo delete_`date` >> /root/mycron/elastic_history.log
+------------------------------------------------------------------------
+
+/root/mycron/get_applications.sh
+------------------------------------------------------------------------
+#!/bin/sh
+
+/usr/share/logstash/bin/logstash -f /usr/share/logstash/bin/logstash-mssql-applist.conf
+echo get_`date` >> /root/mycron/elastic_history.log
+------------------------------------------------------------------------
 
 
 
