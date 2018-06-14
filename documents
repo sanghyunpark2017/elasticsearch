@@ -4,6 +4,9 @@ curl -XDELETE http://localhost:9200/.monitoring-kibana*
 curl -XDELETE http://localhost:9200/.monitoring-es*
 curl -XDELETE http://localhost:9200/.watcher-history*
 
+#indexs listup & partial search
+curl -XGET 127.0.0.1:9200/_cat/indices?v
+curl -XGET '127.0.0.1:9200/applications/_search?pretty'
 
 
 
