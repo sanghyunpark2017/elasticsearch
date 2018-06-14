@@ -1,4 +1,12 @@
 
+
+MSSQL에 필드속성이 char이면서 날짜형태의 데이터와 문자(ex 예정없음)가 함께 들어가 있을 때
+ELK로 넘어가면서 datatime으로 인식되어 문자데이터 오류가 발생함
+MSSQL에서 문자제거 하거나 elk document에서 먼저 텍스트로 정의 후 데이터를 넘겨야 함
+
+
+
+
 ###############################################
 #구성관리DB에서 데이터 로드(어플리케이션목록)
 ###############################################
@@ -37,7 +45,7 @@ curl -XDELETE http://localhost:9200/applications*
 ./logstash -f ./logstash-mssql-applist.conf
 
 ###############################################
-#구성관리DB에서 데이터 로드(가상서버 목록)
+#구성관리DB에서 데이터 로드(가상서버 목록, 이 것은 아직 쓰지 않음)
 ###############################################
 
 cd /usr/share/logstash/bin
@@ -67,7 +75,7 @@ output {
 }
 
 #기존 document "applications" 삭제
-curl -XDELETE http://localhost:9200/applications*
+curl -XDELETE http://localhost:9200/vmlist*
 
 #데이터전송(MSSQL -> Elasticsearch)
 ./logstash -f ./logstash-mssql-vmlist.conf
@@ -89,9 +97,9 @@ vir_nm="NTNX8k-Homeplus Cluster (운영)"
 
 
 
-##############
-#Graph 생성1
-##############
+############################
+#Graph 생성1  
+############################
 
 #app_category_all
 index : applications*
@@ -104,7 +112,7 @@ fields: category3(20), nost_nm(99)
 settings : certainty : 1
 
 ##############
-#비쥬얼 생성
+#비쥬얼 생성(인덱스는 applications*)
 ##############
 
 저장할 때 필터링 없이 저장할 것!
