@@ -428,6 +428,55 @@ systemctl start elasticsearch
 systemctl start kibana
 
 
+#################################
+Filebeat와 logstash CONFIGS
+#################################
+
+#filebeat 설치
+https://www.elastic.co/downloads/beats/filebeat
+
+
+
+#filebeat config (local server)
+filebeat.prospectors: 
+  - input_type: log 
+    path: 
+      - /path/to/apache/access.log 
+    document_type: apache 
+  - input_type: log 
+    path: 
+      - /path/to/db/mydb.log 
+    document_type: postgres 
+output.logstash: 
+  hosts: [ "localhost:5044" ]
+
+
+#logstash config (remote server)
+input { 
+  beats { 
+    port => "5044" 
+  } 
+} 
+filter { 
+  if [type] == "apache" { 
+      # YOUR CUSTOM FILTERS FOR APACHE LOG ... 
+  } 
+  else if [type] == "postgres" { 
+      # YOUR CUSTOM FILTERS FOR POSTGRESQL LOG ... 
+  } 
+} 
+output { 
+  if [type] == "apache" { 
+      # YOUR CUSTOM OUTPUT FOR APACHE LOG ... 
+  } 
+  else if [type] == "postgres" { 
+      # YOUR CUSTOM OUTPUT FOR POSTGRESQL LOG ... 
+  } 
+}
+
+
+
+
 
 
  
