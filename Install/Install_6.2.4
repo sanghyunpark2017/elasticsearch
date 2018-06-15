@@ -438,6 +438,8 @@ https://www.elastic.co/downloads/beats/filebeat
 
 
 #filebeat config (local server)
+vi filebeat.yaml
+-----------------------------------------------------------
 filebeat.prospectors: 
   - input_type: log 
     path: 
@@ -448,13 +450,17 @@ filebeat.prospectors:
       - /path/to/db/mydb.log 
     document_type: postgres 
 output.logstash: 
-  hosts: [ "localhost:5044" ]
+  hosts: [ "localhost:5701" ]
+-----------------------------------------------------------
+./filebeat -e -c filebeat.yml -d "publish"
 
 
 #logstash config (remote server)
+vi logstash-pipeline-5701.conf
+-----------------------------------------------------------
 input { 
   beats { 
-    port => "5044" 
+    port => "5701" 
   } 
 } 
 filter { 
@@ -473,6 +479,10 @@ output {
       # YOUR CUSTOM OUTPUT FOR POSTGRESQL LOG ... 
   } 
 }
+-----------------------------------------------------------
+bin/logstash -f logstash-pipeline-5701.conf --config.test_and_exit
+
+
 
 
 
