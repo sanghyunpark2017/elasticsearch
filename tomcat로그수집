@@ -1,0 +1,31 @@
+
+
+
+#로그서버 1대 일 댸 : logstassh -> elasticsearch
+input {
+    file {
+        type => "log"
+        path => ["C:/Tomcat/apache-tomcat-7.0.37/logs/catalina.2017-08-30.log"]
+                        start_position => "beginning"
+    }
+}
+filter {
+      grok {
+        match => { "message" => "%{COMBINEDAPACHELOG}" }
+      }
+      date {
+        match => [ "timestamp" , "dd/MMM/yyyy:HH:mm:ss Z" ]
+      }
+    }
+output {
+  elasticsearch { hosts => ["localhost:9200"]
+  index => "apache"
+  }
+  stdout { codec => rubydebug }
+}
+
+
+#로그서버 N대 일 때 : filebeatxN대 -> logstash -> elasticsearch
+
+
+
