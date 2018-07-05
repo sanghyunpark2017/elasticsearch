@@ -2,6 +2,372 @@
 #X-Pack 코드 공개: 6.3.0 버전을 다운 받으면 X-Pack 버튼 클릭 한 번으로 X-Pack을 바로 실행할 수 있으며, 
 #X-Pack Basic License의 기능을 만료 기한 없이 자유롭게 이용할 수 있습니다.
 
+#################################
+대상서버
+#################################
+
+1번호스트 : master, data, ingest, kibana
+2번호스트 : master, data, ingest
+3번호스트 : master, data, ingest
+
+discovery.zen.mininum_master_nodes : (3 / 2) + 1 = 2
+
+#################################
+OS BASIC
+#################################
+
+cd ~
+cat << EOF >> .bashrc
+export LS_COLORS="di=00;36:fi=00;37"
+EOF
+
+yum install -y net-tools
+
+#################################
+SWAP Off 및 방화벽설정
+#################################
+
+sysctl -w vm.swappiness=0
+
+systemctl enable firewalld
+systemctl start firewalld
+firewall-cmd --permanent --add-port=9200/tcp
+firewall-cmd --permanent --add-port=9300/tcp
+firewall-cmd --permanent --add-port=5601/tcp
+firewall-cmd --reload   
+
+
+#################################
+JAVA설치
+#################################
+
+yum install -y wget
+cd /opt/
+
+wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz"
+
+tar xzf jdk-8u131-linux-x64.tar.gz
+cd /opt/jdk1.8.0_131/
+alternatives --install /usr/bin/java java /opt/jdk1.8.0_131/bin/java 2
+
+alternatives --config java
+
+clear
+java -version
+export JAVA_HOME=/opt/jdk1.8.0_131
+export JRE_HOME=/opt/jdk1.8.0_131/jre
+export PATH=$PATH:/opt/jdk1.8.0_131/bin:/opt/jdk1.8.0_131/jre/bin
+
+cat << EOF >> /root/.bash_profile
+export JAVA_HOME=/opt/jdk1.8.0_131
+export JRE_HOME=/opt/jdk1.8.0_131/jre
+export PATH=$PATH:/opt/jdk1.8.0_131/bin:/opt/jdk1.8.0_131/jre/bin
+EOF
+
+#################################
+Install elasticsearch 6.3.1
+#################################
+
+기본 프로그램 ($ES_HOME) : /usr/share/elasticsearch
+실행 파일 : bin/elasticsearch
+플러그인 : plugins
+설정 : /etc/elasticsearch
+./elasticsearch.yml
+./jvm.options
+./log4j2.properties
+데이터 (path.data) : /var/lib/elasticsearch
+로그 (path.logs) : /var/log/elasticsearch
+
+#################################
+All servers
+#################################
+
+cd ~
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.3.1.rpm
+
+sudo rpm --install elasticsearch-6.3.1.rpm
+
+grep "elasticsearch" /etc/passwd
+grep "elasticsearch" /etc/group 
+
+sudo systemctl daemon-reload
+sudo systemctl enable elasticsearch.service
+
+#path.dat와 path.logs는 주석처리 한다
+cd /etc/elasticsearch
+cp elasticsearch.yml elasticsearch.yml.org
+
+vi /etc/elasticsearch/elasticsearch.yml
+-----------------------------------------------------------------------------------
+#path.data: /var/lib/elasticsearch
+#path.logs: /var/log/elasticsearch
+-----------------------------------------------------------------------------------
+
+
+cat << EOF >> /etc/elasticsearch/elasticsearch.yml
+cluster.name: hmp-sds-logs
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+http.cors.enabled: true
+http.cors.allow-origin: "*"
+http.cors.allow-headers: Authorization       #for head & XPACK
+transport.tcp.port: 9300 
+node.master: true
+node.data: true
+node.ingest: true
+path.data: /app/elasticsearch/data
+path.logs: /app/elasticsearch/log
+#index.number_of_shards: 5
+#index.number_of_replicas: 1
+discovery.zen.ping_timeout: 10s
+discovery.zen.ping.unicast.hosts: ["10.10.62.102:9300", "10.10.62.103:9300",  "10.10.62.104:9300"]
+#discovery.zen.minimum_master_nodes: 3  #for 5 nodes 
+discovery.zen.minimum_master_nodes: 2  #for 3 nodes 
+#action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
+EOF
+
+#확인
+vi /etc/elasticsearch/elasticsearch.yml
+
+#action.auto_create_index 항목은 xpack 설치 후 쓰는 것이며, 지금은 오류가 발생하니 주석처리해 둔다
+
+#디렉토리 생성
+mkdir -p /app/elasticsearch/data
+mkdir -p /app/elasticsearch/log
+chown elasticsearch:elasticsearch -R /app/elasticsearch
+
+
+마스터/노드 모든 서버에 서비스를 기동하고 크롬 헤드에서 정상 확인
+sudo systemctl start elasticsearch.service
+sudo systemctl status elasticsearch.service
+
+
+#크롬일레스틱헤드에서 설치 확인
+#크롬검색> chrome elasticsearch head 검색 후 설치
+http://10.10.62.102:9200
+
+#################################
+Install Elasticsearch X-Pack 
+#################################
+
+#6.3.1 버전은 X-Pack이 기본으로 설치되어 있음
+
+#x-pack 설치 후에는 security.enabled를 disable 하는 코드를 추가한다
+cat << EOF >> /etc/elasticsearch/elasticsearch.yml
+xpack.security.enabled: false
+EOF
+
+
+#################################
+Install KIBANA 6.x & X-PACK (마스터 서버 ONLY)
+#################################
+
+#kibana는 마스터서버에 6.x 대의 최신 버전으로 설치 한다 (별도 서버 설치 권장)
+#불필요한 트랜잭션 유입을 차단하기 위해 모든 서버에 elasticsearch 서비스 중지
+
+systemctl stop elasticsearch
+
+
+#마스터서버에만 설치 진행
+rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+
+cat << EOF > /etc/yum.repos.d/kibana.repo
+[kibana-6.x]
+name=Kibana repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+EOF
+
+sudo yum install -y kibana 
+
+sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable kibana.service
+
+
+#TCP 5601를 모든 IP에서 Listen하게 하고, 마스터서버를 알려준다
+cat << EOF >> /etc/kibana/kibana.yml
+server.host: 0.0.0.0
+elasticsearch.url: http://10.10.62.102:9200
+EOF
+
+#kibana 6.3.1 버전에서는 x-pack 설치가 포함되어 있음
+
+
+#모든서버에 elasticsearch  서비스 시작
+systemctl start elasticsearch
+systemctl status elasticsearch
+
+#마스터서버에 kibana 서비스 시작(처음으로 실행 시 포트리슨에 수십 초 걸림)
+systemctl start kibana
+systemctl status kibana
+
+#로그확인
+journalctl -u kibana.service
+
+#마스터서버 kibana접속
+http://masterip:5601
+
+
+#################################
+마스터서버에 LOG STASH 설치(데몬)
+################################
+6.x 최신 버전 설치
+
+rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+
+cat << EOF > /etc/yum.repos.d/logstash.repo 
+[logstash-6.x]
+name=Elastic repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+EOF
+
+
+sudo yum install -y logstash
+
+cat << EOF > /usr/share/logstash/bin/logstash.conf
+input { stdin { } }
+output {
+  elasticsearch { hosts => ["localhost:9200"] }
+  stdout { codec => rubydebug }
+}
+EOF
+
+
+#/etc/logstash는 logstash.yml  파일위치
+cd /usr/share/logstash/bin
+./logstash --path.settings=/etc/logstash -f logstash.conf
+
+
+--> 엘라스틱 서치 서비스가 실행되어 있어야 함
+--> logstash 데몬이 실행되고(수초 소요) 표준입력이 표준출력으로 나오는지 확인 후 CTRL+C로 종료
+
+
+
+#################################
+패러미터 조정 
+#################################
+
+#java heap
+#전체 메모리의 50%는 java heap, 나머지 50%는 루씬 파일 캐시에 사용
+
+vi /etc/elasticsearch/jvm.options
+-Xms1g
+-Xmx1g
+
+#swap off
+swapoff -a
+
+#파일
+cat << EOF >> /etc/security/limits.conf
+elasticsearch soft memlock unlimited
+elasticsearch hard memlock unlimited
+EOF
+
+
+#################################
+데이터 초기백업
+#################################
+
+#데이터노드백업
+systemctl stop kibana
+systemctl stop elasticsearch
+
+cd ~
+tar cvfzp elastic_data_initial.tar.gz /app/elasticsearch/data/nodes/
+
+systemctl start elasticsearch
+systemctl start kibana
+
+
+#################################
+데이터 복구
+#################################
+
+#모든 노드 서비스 중지
+systemctl stop kibana
+systemctl stop elasticsearch
+
+rm -rf /var/lib/elasticsearch/nodes
+mkdir -p /var/lib/elasticsearch/nodes
+chown elasticsearch:elasticsearch /var/lib/elasticsearch/nodes
+
+cd /
+tar xvfzp /root/elastic_data_initial.tar.gz 
+
+systemctl start elasticsearch
+systemctl start kibana
+
+
+
+#################################
+Filebeat와 logstash CONFIGS
+#################################
+
+#filebeat 설치
+https://www.elastic.co/downloads/beats/filebeat
+
+
+
+#filebeat config (local server)
+vi filebeat.yaml
+-----------------------------------------------------------
+filebeat.prospectors: 
+  - input_type: log 
+    path: 
+      - /path/to/apache/access.log 
+    document_type: apache 
+  - input_type: log 
+    path: 
+      - /path/to/db/mydb.log 
+    document_type: postgres 
+output.logstash: 
+  hosts: [ "localhost:5701" ]
+-----------------------------------------------------------
+./filebeat -e -c filebeat.yml -d "publish"
+
+
+#logstash config (remote server)
+vi logstash-pipeline-5701.conf
+-----------------------------------------------------------
+input { 
+  beats { 
+    port => "5701" 
+  } 
+} 
+filter { 
+  if [type] == "apache" { 
+      # YOUR CUSTOM FILTERS FOR APACHE LOG ... 
+  } 
+  else if [type] == "postgres" { 
+      # YOUR CUSTOM FILTERS FOR POSTGRESQL LOG ... 
+  } 
+} 
+output { 
+  if [type] == "apache" { 
+      # YOUR CUSTOM OUTPUT FOR APACHE LOG ... 
+  } 
+  else if [type] == "postgres" { 
+      # YOUR CUSTOM OUTPUT FOR POSTGRESQL LOG ... 
+  } 
+}
+-----------------------------------------------------------
+bin/logstash -f logstash-pipeline-5701.conf --config.test_and_exit
+
+
+
+
+
 
 
 
