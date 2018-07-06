@@ -212,8 +212,13 @@ http://masterip:5601
 #################################
 마스터서버에 LOG STASH 설치(데몬)
 ################################
-#6.x 최신 버전 설치되며, 2번 서버에 설치한다
 
+#Listen Port는 5555를 사용하기로 한다.
+firewall-cmd --permanent --add-port=5555/tcp
+firewall-cmd --reload   
+
+
+#6.x 최신 버전 설치되며, 2번 서버에 설치한다
 rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
 
