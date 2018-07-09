@@ -392,13 +392,118 @@ EOF
 
 curl -XDELETE http://localhost:9200/test2*
 
+rm -f /root/test*
+
+
+################################################################
+LOG STASH 입력테스트3(logstash listen & filebeat 전송)
+################################################################
+
+
+##########################
+#PART1. Logstash Listen&config
+##########################
+
+
+#logstash 리슨 config (remote server)
+vi /root/logstash-pipeline-5555.conf
+-----------------------------------------------------------
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+output {
+  elasticsearch { hosts => "http://10.10.62.103:9200"
+  index => "filebeat-test-log"
+  }
+}
+-----------------------------------------------------------
+
+#실행
+/usr/share/logstash/bin/logstash -f /root/logstash-pipeline-5555.conf --config.reload.automatic
+
+#--path.settings=/etc/logstash 
+
+##########################
+#PART2. Filebeat 설치/실행
+##########################
+
+#ElasticSecarch서버가 아닌 다른 서버에서 설치&테스트 (권장)
+#10.10.64.66 테스트 서버 사용
+
+#설치
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+
+vi /etc/yum.repos.d/elastic.repo
+---------------------------------------------------------------
+[elastic-6.x]
+name=Elastic repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+---------------------------------------------------------------
+
+yum install -y filebeat
+
+#부팅 시 자동실행 설정
+sudo chkconfig --add filebeat
+
+cd /etc/filebeat
+cp filebeat.yml filebeat.yml.org
+
+
+#테스트파일 생성
+cat << EOF > /root/test2.log
+2018-07-09 01:00:00 row1
+  row1-1
+  row1-2
+  row1-3
+2018-07-09 02:00:00 row2
+  row2-1
+  row2-2
+  row2-3
+2018-07-09 03:00:00 row3
+  row3-1
+  row3-2
+  row3-3
+EOF
+
+
+vi /root/filebeat-test.conf
+------------------------------------------------------
+filebeat.prospectors:
+- input_type: log
+  paths:
+    - /root/test2.log 
+output.logstash:
+  hosts: ["10.10.62.103:5555"]
+------------------------------------------------------
+
+/usr/share/filebeat/bin/filebeat -e -c /root/filebeat-test.conf -d "publish"
 
 
 
 
-#################################
-Filebeat와 logstash CONFIGS
-#################################
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #filebeat 설치
 https://www.elastic.co/downloads/beats/filebeat
@@ -423,63 +528,7 @@ output.logstash:
 ./filebeat -e -c filebeat.yml -d "publish"
 
 
-#logstash config (remote server)
-vi logstash-pipeline-5701.conf
------------------------------------------------------------
-input { 
-  beats { 
-    port => "5701" 
-  } 
-} 
-filter { 
-  if [type] == "apache" { 
-      # YOUR CUSTOM FILTERS FOR APACHE LOG ... 
-  } 
-  else if [type] == "postgres" { 
-      # YOUR CUSTOM FILTERS FOR POSTGRESQL LOG ... 
-  } 
-} 
-output { 
-  if [type] == "apache" { 
-      # YOUR CUSTOM OUTPUT FOR APACHE LOG ... 
-  } 
-  else if [type] == "postgres" { 
-      # YOUR CUSTOM OUTPUT FOR POSTGRESQL LOG ... 
-  } 
-}
------------------------------------------------------------
-bin/logstash -f logstash-pipeline-5701.conf --config.test_and_exit
 
-
-################################################
-logstash 멀티라인 대화형 입력 테스트 (2018/07/09)
-################################################
-
-#테스트설정파일
-vi /root/test.conf
------------------------------------------------------------
-input {
-  stdin {
-    codec => multiline {
-      pattern => "^\s"
-      what => "previous"
-    }
-  }
-}
-
-output {
-  elasticsearch { hosts => "http://10.10.62.103:9200"
-  index => "test-log"
-  }
-  stdout { codec => rubydebug }
-}
------------------------------------------------------------
-
-#대화형입력(첫번째 행 공백문자는 이전(이전) 도큐먼트로 처리)
-/usr/share/logstash/bin/logstash --path.settings=/etc/logstash -f test.conf
-
-#테스트 후 삭제
-curl -XDELETE http://localhost:9200/test*
 
 
 
