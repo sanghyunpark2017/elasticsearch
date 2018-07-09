@@ -498,7 +498,8 @@ filebeat:
     input_type: log
     ignore_older: 24h
     scan_frequency: 5s
-    clean_inactive: 48h    
+    clean_inactive: 48h  
+    clean_removed: true    
     paths:
       - /root/test2.log 
     multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
@@ -558,6 +559,10 @@ cat << EOF >> /root/test2.log
   row6-2
   row6-3    
 EOF
+
+
+Notice!!!
+파일순환 조건이 뭔지 inode가 바뀌는 건지 등 확인 필요함
 
 
 
