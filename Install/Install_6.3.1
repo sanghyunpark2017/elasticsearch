@@ -399,13 +399,14 @@ rm -f /root/test*
 LOG STASH 입력테스트3(logstash listen & filebeat 전송)
 ################################################################
 
+#멀티라인 설정은 logstash와 filebeat가 다름
+#logstash는 리슨만하고, 멀티라인 처리는 filebeat가 수행
+
 
 ##########################
 #PART1. Logstash Listen&config
 ##########################
 
-
-#logstash 리슨 config (remote server)
 vi /root/logstash-pipeline-5555.conf
 -----------------------------------------------------------
 input { 
@@ -472,62 +473,103 @@ cat << EOF > /root/test2.log
   row3-3
 EOF
 
-
+#테스트설정
 vi /root/filebeat-test.conf
 ------------------------------------------------------
 filebeat.prospectors:
 - input_type: log
   paths:
     - /root/test2.log 
+  multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+  multiline.negate: true
+  multiline.match: after
 output.logstash:
   hosts: ["10.10.62.103:5555"]
 ------------------------------------------------------
 
-/usr/share/filebeat/bin/filebeat -e -c /root/filebeat-test.conf -d "publish"
+#운영설정
+
+vi /root/filebeat-test.conf
+------------------------------------------------------
+filebeat:
+  prospectors:
+  - document_type: log
+    encoding: utf-8
+    input_type: log
+    ignore_older: 24h
+    scan_frequency: 5s
+    clean_inactive: 48h    
+    paths:
+      - /root/test2.log 
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s    
+output.logstash:
+  hosts:
+  - 10.10.62.102:5555
+  - 10.10.62.103:5555
+  - 10.10.62.104:5555
+  loadbalance: true
+------------------------------------------------------
+
+# -e 옵션은 디버그
+/usr/share/filebeat/bin/filebeat -e -c /root/filebeat-test.conf   -d "publish"
+
+curl -XDELETE http://localhost:9200/filebeat-test*
+
+
+
+#테스트파일 재생성
+
+cat << EOF > /root/test2.log
+2018-07-09 01:00:00 row1
+  row1-1
+  row1-2
+  row1-3
+2018-07-09 02:00:00 row2
+  row2-1
+  row2-2
+  row2-3
+2018-07-09 03:00:00 row3
+  row3-1
+  row3-2
+  row3-3
+EOF
+
+#테스트파일 라인추가(row4)
+cat << EOF >> /root/test2.log
+2018-07-09 04:00:00 row4
+  row4-1
+  row4-2
+  row4-3
+EOF
+
+#테스트파일 라인추가(row5, row6)
+cat << EOF >> /root/test2.log
+2018-07-09 05:00:00 row5
+  row5-1
+  row5-2
+  row5-3
+EOF
+
+cat << EOF >> /root/test2.log
+  row6-1
+  row6-2
+  row6-3    
+EOF
 
 
 
 
+#노트!!!!
+VI편집기로 열어서 라인추가하고 저장하면 처음부터 모두 다시 로딩함
+단, cat 으로 추가하면 라인 단위로 가져옴;;
+-> cat 등은 inode가 바뀌지 않음
+-> vi는 inode를 바꿈
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#filebeat 설치
-https://www.elastic.co/downloads/beats/filebeat
-
-
-
-#filebeat config (local server)
-vi filebeat.yaml
------------------------------------------------------------
-filebeat.prospectors: 
-  - input_type: log 
-    path: 
-      - /path/to/apache/access.log 
-    document_type: apache 
-  - input_type: log 
-    path: 
-      - /path/to/db/mydb.log 
-    document_type: postgres 
-output.logstash: 
-  hosts: [ "localhost:5701" ]
------------------------------------------------------------
-./filebeat -e -c filebeat.yml -d "publish"
-
-
+more /usr/share/filebeat/bin/data/registry
 
 
 
