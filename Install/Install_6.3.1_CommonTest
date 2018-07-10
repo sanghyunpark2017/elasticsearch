@@ -77,8 +77,9 @@ cd /etc/elasticsearch
 cp elasticsearch.yml elasticsearch.yml.org
 
 #elasticsearch.yml 새로 생성
+#클러스터이름은 test-commmon
 cat << EOF > /etc/elasticsearch/elasticsearch.yml
-cluster.name: hmp-sds-logs
+cluster.name: test-commmon
 node.name: ${HOSTNAME}
 network.host: 0.0.0.0
 http.cors.enabled: true
@@ -119,8 +120,8 @@ http://10.10.64.91:9200
 
 #java heap은 전체 메모리의 50%로 지정. 나머지 50%는 루씬 파일 캐시에 사용.
 vi /etc/elasticsearch/jvm.options
--Xms1g
--Xmx1g
+-Xms2g
+-Xmx2g
 
 #파일
 cat << EOF >> /etc/security/limits.conf
@@ -188,25 +189,20 @@ http://10.10.64.91:5601
 
 
 
-
-
-
-
-
-
-
-
 #################################
 데이터 초기백업
 #################################
 
-#데이터노드백업
+#초기상태 백업 위해 모든 서비스 중지
 systemctl stop kibana
 systemctl stop elasticsearch
 
+#초기상태 백업
 cd ~
+rm -f elastic_data_initial.tar.gz
 tar cvfzp elastic_data_initial.tar.gz /app/elasticsearch/data/nodes/
 
+#서비스기동
 systemctl start elasticsearch
 systemctl start kibana
 
@@ -253,6 +249,9 @@ curl -XDELETE http://localhost:9200/logstash-20*
 echo `date` : Delete logstash logs  >> /root/mycron/elastic_history.log
 ---------------------------------------------------
 
+chmod 755 /root/mycron/delete_logs.sh
+
+
 
 #################################
 마스터서버에 LOG STASH 설치
@@ -274,16 +273,16 @@ EOF
 
 sudo yum install -y logstash
 
-#설정변경
+
+#설정추가
 cat << EOF >> /etc/logstash/logstash.yml
 http.host "0.0.0.0"
 http.port: 9600-9700
 EOF
 
 
-
 ################################################################
-LOG STASH 입력테스트1(화면입력)
+LOGSTASH 화면 입력테스트
 ################################################################
 
 #화면 입력 테스트용 설정파일 작성 (3대 각각 확인)
@@ -295,248 +294,13 @@ output {
 }
 EOF
 
+
 #화면 입력 테스트
-#-서버 1대씩 롤링 테스트
-#-head에서 입력 확인
-
-curl -XDELETE http://localhost:9200/logstash*
-/usr/share/logstash/bin/logstash --path.settings=/etc/logstash  -f /root/test.conf
-
-
-
-################################################################
-LOG STASH 입력테스트2(멀티라인파일입력)
-################################################################
-
-
-#멀티라인 파일 입력 테스트용 설정파일 작성 (3대 각각 확인)
-cat << EOF > /root/test2.conf
-input {
-  file {
-    path => "/root/test2.log"
-    start_position => "beginning"
-    stat_interval => 10
-    codec => multiline {
-      pattern => "^\s"
-      what => "previous"
-    }
-  }
-}
-
-output {
-  elasticsearch { hosts => "http://10.10.62.103:9200"
-  index => "test2-log"
-  }
-  stdout { codec => rubydebug }
-}
-EOF
-
-#멀티라인 테스트용 파일 작성
-
-cat << EOF > /root/test2.log
-2018-07-09 01:00:00 row1
-  row1-1
-  row1-2
-  row1-3
-2018-07-09 02:00:00 row2
-  row2-1
-  row2-2
-  row2-3
-2018-07-09 03:00:00 row3
-  row3-1
-  row3-2
-  row3-3
-EOF
-
-#실행(3대 롤링으로 테스트)
-
-/usr/share/logstash/bin/logstash --path.settings=/etc/logstash -f /root/test2.conf
-
-#head에서 확인 후 인덱스 삭제
-
-curl -XDELETE http://localhost:9200/test2*
-
-rm -f /root/test*
-
-
-################################################################
-LOG STASH 입력테스트3(logstash listen & filebeat 전송)
-################################################################
-
-#멀티라인 설정은 logstash와 filebeat가 다름
-#logstash는 리슨만하고, 멀티라인 처리는 filebeat가 수행
-
-
-##########################
-#PART1. Logstash Listen&config
-##########################
-
-vi /root/logstash-pipeline-5555.conf
------------------------------------------------------------
-input { 
-  beats { 
-    port => "5555" 
-  } 
-} 
-output {
-  elasticsearch { hosts => "http://10.10.62.103:9200"
-  index => "filebeat-test-log"
-  }
-}
------------------------------------------------------------
-
-#실행
-/usr/share/logstash/bin/logstash -f /root/logstash-pipeline-5555.conf --config.reload.automatic
-
-#--path.settings=/etc/logstash 
-
-##########################
-#PART2. Filebeat 설치/실행
-##########################
-
-#ElasticSecarch서버가 아닌 다른 서버에서 설치&테스트 (권장)
-#10.10.64.66 테스트 서버 사용
-
-#설치
-rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
-
-vi /etc/yum.repos.d/elastic.repo
----------------------------------------------------------------
-[elastic-6.x]
-name=Elastic repository for 6.x packages
-baseurl=https://artifacts.elastic.co/packages/6.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=1
-autorefresh=1
-type=rpm-md
----------------------------------------------------------------
-
-yum install -y filebeat
-
-#부팅 시 자동실행 설정
-sudo chkconfig --add filebeat
-
-cd /etc/filebeat
-cp filebeat.yml filebeat.yml.org
-
-
-#테스트파일 생성
-cat << EOF > /root/test2.log
-2018-07-09 01:00:00 row1
-  row1-1
-  row1-2
-  row1-3
-2018-07-09 02:00:00 row2
-  row2-1
-  row2-2
-  row2-3
-2018-07-09 03:00:00 row3
-  row3-1
-  row3-2
-  row3-3
-EOF
-
-#테스트설정
-vi /root/filebeat-test.conf
-------------------------------------------------------
-filebeat.prospectors:
-- input_type: log
-  paths:
-    - /root/test2.log 
-  multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
-  multiline.negate: true
-  multiline.match: after
-output.logstash:
-  hosts: ["10.10.62.103:5555"]
-------------------------------------------------------
-
-#운영설정
-
-vi /root/filebeat-test.conf
-------------------------------------------------------
-filebeat:
-  prospectors:
-  - document_type: log
-    encoding: utf-8
-    input_type: log
-    ignore_older: 24h
-    scan_frequency: 5s
-    clean_inactive: 48h  
-    clean_removed: true    
-    paths:
-      - /root/test2.log 
-    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
-    multiline.negate: true
-    multiline.match: after
-    multiline.timeout: 5s    
-output.logstash:
-  hosts:
-  - 10.10.62.102:5555
-  - 10.10.62.103:5555
-  - 10.10.62.104:5555
-  loadbalance: true
-------------------------------------------------------
-
-# -e 옵션은 디버그
-/usr/share/filebeat/bin/filebeat -e -c /root/filebeat-test.conf   -d "publish"
-
-curl -XDELETE http://localhost:9200/filebeat-test*
-
-
-
-#테스트파일 재생성
-
-cat << EOF > /root/test2.log
-2018-07-09 01:00:00 row1
-  row1-1
-  row1-2
-  row1-3
-2018-07-09 02:00:00 row2
-  row2-1
-  row2-2
-  row2-3
-2018-07-09 03:00:00 row3
-  row3-1
-  row3-2
-  row3-3
-EOF
-
-#테스트파일 라인추가(row4)
-cat << EOF >> /root/test2.log
-2018-07-09 04:00:00 row4
-  row4-1
-  row4-2
-  row4-3
-EOF
-
-#테스트파일 라인추가(row5, row6)
-cat << EOF >> /root/test2.log
-2018-07-09 05:00:00 row5
-  row5-1
-  row5-2
-  row5-3
-EOF
-
-cat << EOF >> /root/test2.log
-  row6-1
-  row6-2
-  row6-3    
-EOF
-
-
-Notice!!!
-파일순환 조건이 뭔지 inode가 바뀌는 건지 등 확인 필요함
+/usr/share/logstash/bin/logstash  -f /root/test1.conf
 
 
 
 
-#노트!!!!
-VI편집기로 열어서 라인추가하고 저장하면 처음부터 모두 다시 로딩함
-단, cat 으로 추가하면 라인 단위로 가져옴;;
--> cat 등은 inode가 바뀌지 않음
--> vi는 inode를 바꿈
 
 
-more /usr/share/filebeat/bin/data/registry
 
