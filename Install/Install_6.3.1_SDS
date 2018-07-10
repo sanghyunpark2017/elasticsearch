@@ -289,6 +289,8 @@ curl -XDELETE http://localhost:9200/logstash-20*
 echo `date` : Delete logstash logs  >> /root/mycron/elastic_history.log
 ---------------------------------------------------
 
+chmod 755 /root/mycron/delete_logs.sh
+
 
 #################################
 마스터서버에 LOG STASH 설치
@@ -319,7 +321,7 @@ EOF
 
 
 ################################################################
-LOG STASH 입력테스트1(화면입력)
+LOGSTASH 화면 입력테스트
 ################################################################
 
 #화면 입력 테스트용 설정파일 작성 (3대 각각 확인)
@@ -331,13 +333,11 @@ output {
 }
 EOF
 
+
 #화면 입력 테스트
-#-서버 1대씩 롤링 테스트
-#-head에서 입력 확인
-
 curl -XDELETE http://localhost:9200/logstash*
-/usr/share/logstash/bin/logstash --path.settings=/etc/logstash  -f /root/test.conf
 
+/usr/share/logstash/bin/logstash  -f /root/test1.conf
 
 
 ################################################################
