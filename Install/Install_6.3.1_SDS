@@ -528,7 +528,10 @@ curl -XDELETE http://localhost:9200/filebeat-test*
 파일순환 조건이 뭔지 inode가 바뀌는 건지 등 확인 필요함
 
 #파일 라인단위 추적정보 확인
-more /usr/share/filebeat/bin/data/registry
+cat /var/lib/filebeat/registry
+
+
+
 
 
 #노트!!!!
