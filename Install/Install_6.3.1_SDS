@@ -426,6 +426,7 @@ output {
 
 #--path.settings=/etc/logstash 
 
+
 ##########################
 #PART2. Filebeat 설치/실행
 ##########################
@@ -453,8 +454,12 @@ yum install -y filebeat
 #부팅 시 자동실행 설정
 sudo chkconfig --add filebeat
 
+#원본 파일 백업
 cd /etc/filebeat
 cp filebeat.yml filebeat.yml.org
+
+cat filebeat.yml
+
 
 
 #테스트파일 생성
