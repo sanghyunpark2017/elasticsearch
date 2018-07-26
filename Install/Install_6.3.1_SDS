@@ -333,6 +333,10 @@ http.port: 9600-9700
 #이정보를 갖고 기동 됨 path.config: "/etc/logstash/conf.d/*.conf"
 
 #설정파일 작성
+#filter는 filebeat에서 보내주는 일부 필드를 삭제하기 위함
+#grok는 멀티라인으로 통합한 메시지로 부터 날짜/시간을 꺼내서 별도의 필드에 app기준의 시간을 넣는다
+
+cd /etc/logstash/conf.d
 
 vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
 -----------------------------------------------------------
@@ -341,6 +345,23 @@ input {
     port => "5555" 
   } 
 } 
+
+filter {
+  mutate {
+    remove_field => [ "beat", "offset", "source", "tags" ]
+  }
+
+  grok {
+    match => { "message" => "%{TIMESTAMP_ISO8601:timestamp} .*" }
+  }
+ 
+
+
+  date {
+    match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+  }
+}
+
 output {
   elasticsearch { hosts => "http://10.10.62.103:9200"
   index => "filebeat-test-log"
@@ -363,7 +384,9 @@ tail -f /var/log/logstash/logstash-plain.log
 systemctl enable logstash
 
 
+#curl -XDELETE http://localhost:9200/filebeat-test-*
 
+ 
 ##################################################################
 ##################################################################
 로그를 보내는 쪽에 Filebeat 설치/실행
@@ -415,12 +438,14 @@ filebeat:
     multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
     multiline.negate: true
     multiline.match: after
-    multiline.timeout: 5s    
+    multiline.timeout: 5s     
 output.logstash:
   hosts:
   - 10.10.62.103:5555
   loadbalance: true
 ------------------------------------------------------
+
+
 
 #서비스 실행하면 기본 디렉토리에 설정파일을 가지고 구동
 
@@ -443,6 +468,17 @@ curl -XDELETE http://localhost:9200/filebeat-test*
 #파일 라인단위 추적정보 확인
 cat /var/lib/filebeat/registry
 
+#레지스트리파일 리셋하려면 서비스를 내린 후에 한다. 서비스 기동 중에 리셋하면 다시 돌아감
+service filebeat stop
+echo "[]" > /var/lib/filebeat/registry
+
+service filebeat start
+service filebeat status
+
+
+
+
+
 
 
 
@@ -458,6 +494,12 @@ VI편집기로 열어서 라인추가하고 저장하면 처음부터 모두 다
 
 
 
+###############################
+후속검토 작업
+###############################
+
+-키바나는 @TIMESTMAP를 날짜 인덳을 하고 있는데, apptimestamp 필드로 변경할 것
+-아직 인덱스를 하나로 할찌 날짜별로 할지 ...
 
 
 
