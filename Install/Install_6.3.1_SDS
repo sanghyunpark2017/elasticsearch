@@ -3,6 +3,8 @@
 #버전 6.3.1은 elasticsearch x-pack과 kibana x-pack이 기본적으로 포함되어 있음
 #이전 설치가이드와 다른 점은 x-pack 설치만 생략되어있음
 #X-Pack Basic License의 기능을 만료 기한 없이 자유롭게 이용할 수 있음.
+#logstash를 elasticsearch 서버와 같이 구동할 떄 메모리는 5GB 이상이어야 함 (OS 2GB, Elk 2GB, Logstash 1GB)
+#메모리가 4GB 일 때는 메모리 부족으로 logstash systemd 에러가 나면서 서비스 등록이 안될 수도 있음 (대개 오류 발생)
 
 #################################
 대상서버
@@ -183,7 +185,7 @@ Install Elasticsearch X-Pack (PASS)
 #6.3.1 버전은 X-Pack이 기본으로 설치되어 있음
 
 ##################################################################
-Install KIBANA 6.x & X-PACK (1번 마스터서버)
+1번 서버에 Install KIBANA 6.x & X-PACK
 ##################################################################
 
 #모든서버 서비스 중지
@@ -292,11 +294,12 @@ echo `date` : Delete logstash logs  >> /root/mycron/elastic_history.log
 chmod 755 /root/mycron/delete_logs.sh
 
 
-#################################
-마스터서버에 LOG STASH 설치
-################################
+##################################################################
+##################################################################
+2번 서버에 LOG STASH 설치(메모리 4g -> 5G로 증설함)
+#################################################################
+##################################################################
 
-#모든서버에 설치
 rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
 cat << EOF > /etc/yum.repos.d/logstash.repo 
@@ -312,11 +315,165 @@ EOF
 
 sudo yum install -y logstash
 
-#설정변경
-cat << EOF >> /etc/logstash/logstash.yml
-http.host "0.0.0.0"
+systemctl start logstash
+systemctl status logstash
+
+#로그확인
+tail -f /var/log/logstash/logstash-plain.log
+
+
+#포트범위 지정 (파일 맨뒤에 추가)
+vi /etc/logstash/logstash.yml
+-------------------------------------------------------
+http.host: "0.0.0.0"
 http.port: 9600-9700
-EOF
+-------------------------------------------------------
+
+#/etc/logstash/pipelines.yml 파일 안에서 디폴트 설정 디렉토리가 정의되어 있다. 여기에 확장 *.conf로 만들어 두면
+#이정보를 갖고 기동 됨 path.config: "/etc/logstash/conf.d/*.conf"
+
+#설정파일 작성
+
+vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
+-----------------------------------------------------------
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+output {
+  elasticsearch { hosts => "http://10.10.62.103:9200"
+  index => "filebeat-test-log"
+  }
+}
+-----------------------------------------------------------
+
+#그럼 이제 위의 설정을 가지고 실행한다.
+#API endpoint는 TCP 9600이고, 리슨포트는 TCP 5555로 나온다
+ 
+systemctl stop logstash
+
+systemctl start logstash
+
+systemctl status logstash
+
+tail -f /var/log/logstash/logstash-plain.log
+
+#구동 정상이면 서비스 자동 등록한다
+systemctl enable logstash
+
+
+
+##################################################################
+##################################################################
+로그를 보내는 쪽에 Filebeat 설치/실행
+#################################################################
+##################################################################
+
+#ElasticSecarch서버가 아닌 다른 서버에서 설치&테스트 (권장)
+#10.10.64.66 테스트 서버 사용
+
+#설치
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+
+vi /etc/yum.repos.d/elastic.repo
+---------------------------------------------------------------
+[elastic-6.x]
+name=Elastic repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+---------------------------------------------------------------
+
+yum install -y filebeat
+
+#부팅 시 자동실행 설정
+sudo chkconfig --add filebeat
+
+#원본 설정파일 백업
+cd /etc/filebeat
+cp filebeat.yml filebeat.yml.org
+
+
+#기본설정파일을 수정/작성하여 OS리붓 후에도 자동으로 물고 올라오게 함
+vi /etc/filebeat/filebeat.yml
+------------------------------------------------------
+filebeat:
+  prospectors:
+  - document_type: log
+    encoding: utf-8
+    input_type: log
+    ignore_older: 24h
+    scan_frequency: 5s
+    clean_inactive: 48h  
+    clean_removed: true    
+    paths:
+      - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s    
+output.logstash:
+  hosts:
+  - 10.10.62.103:5555
+  loadbalance: true
+------------------------------------------------------
+
+#서비스 실행하면 기본 디렉토리에 설정파일을 가지고 구동
+
+service filebeat status
+
+service filebeat start
+
+service filebeat stop
+
+#기본 로그파일을 보면 어떤 설정과, 어떤 파일을 가지고 동작하는지와 이후 동작을 알 수 있음
+tail -f /var/log/filebeat/filebeat
+
+
+#elasticesearch 도큐먼트 삭제
+curl -XDELETE http://localhost:9200/filebeat-test*
+
+#Notice!!!
+파일순환 조건이 뭔지 inode가 바뀌는 건지 등 확인 필요함
+
+#파일 라인단위 추적정보 확인
+cat /var/lib/filebeat/registry
+
+
+
+
+
+#노트!!!!
+VI편집기로 열어서 라인추가하고 저장하면 처음부터 모두 다시 로딩함
+단, cat 으로 추가하면 라인 단위로 가져옴;;
+-> cat 등은 inode가 바뀌지 않음
+-> vi는 inode를 바꿈
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+###############################
+기타
+###############################
+
 
 
 
@@ -393,160 +550,6 @@ EOF
 curl -XDELETE http://localhost:9200/test2*
 
 rm -f /root/test*
-
-
-################################################################
-LOG STASH 입력테스트3(logstash listen & filebeat 전송)
-################################################################
-
-#멀티라인 설정은 logstash와 filebeat가 다름
-#logstash는 리슨만하고, 멀티라인 처리는 filebeat가 수행
-
-
-##########################
-#PART1. Logstash Listen&config
-##########################
-
-vi /root/logstash-pipeline-5555.conf
------------------------------------------------------------
-input { 
-  beats { 
-    port => "5555" 
-  } 
-} 
-output {
-  elasticsearch { hosts => "http://10.10.62.103:9200"
-  index => "filebeat-test-log"
-  }
-}
------------------------------------------------------------
-
-#실행
-/usr/share/logstash/bin/logstash -f /root/logstash-pipeline-5555.conf --config.reload.automatic
-
-#--path.settings=/etc/logstash 
-
-
-##########################
-#PART2. Filebeat 설치/실행
-##########################
-
-#ElasticSecarch서버가 아닌 다른 서버에서 설치&테스트 (권장)
-#10.10.64.66 테스트 서버 사용
-
-#설치
-rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
-
-vi /etc/yum.repos.d/elastic.repo
----------------------------------------------------------------
-[elastic-6.x]
-name=Elastic repository for 6.x packages
-baseurl=https://artifacts.elastic.co/packages/6.x/yum
-gpgcheck=1
-gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
-enabled=1
-autorefresh=1
-type=rpm-md
----------------------------------------------------------------
-
-yum install -y filebeat
-
-#부팅 시 자동실행 설정
-sudo chkconfig --add filebeat
-
-#원본 설정파일 백업
-cd /etc/filebeat
-cp filebeat.yml filebeat.yml.org
-
-#테스트용 로그파일 생성
-cat << EOF > /root/test2.log
-2018-07-09 01:00:00 row1
-  row1-1
-  row1-2
-  row1-3
-2018-07-09 02:00:00 row2
-  row2-1
-  row2-2
-  row2-3
-2018-07-09 03:00:00 row3
-  row3-1
-  row3-2
-  row3-3
-EOF
-
-#테스트설정(한번만 테스트)
-vi /root/filebeat-test.conf
-------------------------------------------------------
-filebeat.prospectors:
-- input_type: log
-  paths:
-    - /root/test2.log 
-  multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
-  multiline.negate: true
-  multiline.match: after
-output.logstash:
-  hosts: ["10.10.62.103:5555"]
-------------------------------------------------------
-
-#운영설정(기본설정파일에 작성하여 OS리붓 후 자동으로 물고 올라오게 함)
-vi /etc/filebeat/filebeat.yml
-------------------------------------------------------
-filebeat:
-  prospectors:
-  - document_type: log
-    encoding: utf-8
-    input_type: log
-    ignore_older: 24h
-    scan_frequency: 5s
-    clean_inactive: 48h  
-    clean_removed: true    
-    paths:
-      - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
-    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
-    multiline.negate: true
-    multiline.match: after
-    multiline.timeout: 5s    
-output.logstash:
-  hosts:
-  - 10.10.62.102:5555
-  - 10.10.62.103:5555
-  - 10.10.62.104:5555
-  loadbalance: true
-------------------------------------------------------
-
-#서비스 실행하면 기본 디렉토리에 설정파일을 가지고 구동
-service filebeat start/stop
-
-#기본 로그파일을 보면 어떤 설정과, 어떤 파일을 가지고 동작하는지와 이후 동작을 알 수 있음
-tail -f /var/log/filebeat/filebeat
-
-
-#elasticesearch 도큐먼트 삭제
-curl -XDELETE http://localhost:9200/filebeat-test*
-
-#Notice!!!
-파일순환 조건이 뭔지 inode가 바뀌는 건지 등 확인 필요함
-
-#파일 라인단위 추적정보 확인
-cat /var/lib/filebeat/registry
-
-
-
-
-
-#노트!!!!
-VI편집기로 열어서 라인추가하고 저장하면 처음부터 모두 다시 로딩함
-단, cat 으로 추가하면 라인 단위로 가져옴;;
--> cat 등은 inode가 바뀌지 않음
--> vi는 inode를 바꿈
-
- 
-
-
-
-
-
-
 
 
 
