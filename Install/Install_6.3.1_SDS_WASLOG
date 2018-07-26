@@ -1,1 +1,194 @@
 
+
+#환경구성
+
+-1번 마스터(4GB) : kibana
+-2번 마스터(5GB) : logstash 
+-3번 마스터(4GB) : none
+
+##################################################################
+2번 서버에 LOG STASH 설치
+#################################################################
+
+rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
+
+cat << EOF > /etc/yum.repos.d/logstash.repo 
+[logstash-6.x]
+name=Elastic repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+EOF
+
+sudo yum install -y logstash
+
+systemctl start logstash
+systemctl status logstash
+
+#로그확인
+tail -f /var/log/logstash/logstash-plain.log
+
+
+#포트범위 지정 (파일 맨뒤에 추가)
+vi /etc/logstash/logstash.yml
+-------------------------------------------------------
+http.host: "0.0.0.0"
+http.port: 9600-9700
+-------------------------------------------------------
+
+#/etc/logstash/pipelines.yml 파일 안에서 디폴트 설정 디렉토리가 정의되어 있다. 여기에 확장 *.conf로 만들어 두면
+#이정보를 갖고 기동 됨 path.config: "/etc/logstash/conf.d/*.conf"
+
+#SDS WASLOG 위한 설정
+#filter는 filebeat에서 보내주는 일부 필드를 삭제하기 위함
+#grok는 멀티라인으로 통합한 메시지로 부터 날짜/시간을 꺼내서 별도의 필드에 app기준의 시간을 넣는다
+
+cd /etc/logstash/conf.d
+
+vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
+-----------------------------------------------------------
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+
+filter {
+  mutate {
+    remove_field => [ "beat", "offset", "source", "tags" ]
+  }
+
+  grok {
+    match => { "message" => "%{TIMESTAMP_ISO8601:apptimestamp} .*" }
+  }
+ 
+  date {
+    match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+  }
+}
+
+output {
+  elasticsearch { hosts => "http://10.10.62.103:9200"
+  index => "filebeat-test-log"
+  }
+}
+-----------------------------------------------------------
+
+#서비스를 재기동 하면 위 설정을 동작
+ 
+systemctl stop logstash
+
+systemctl start logstash
+
+systemctl status logstash
+
+#로그확인
+tail -f /var/log/logstash/logstash-plain.log
+
+#구동 정상이면 서비스 등록
+systemctl enable logstash
+
+
+
+##################################################################
+WAS서버에 Filebeat
+#################################################################
+
+rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
+
+vi /etc/yum.repos.d/elastic.repo
+---------------------------------------------------------------
+[elastic-6.x]
+name=Elastic repository for 6.x packages
+baseurl=https://artifacts.elastic.co/packages/6.x/yum
+gpgcheck=1
+gpgkey=https://artifacts.elastic.co/GPG-KEY-elasticsearch
+enabled=1
+autorefresh=1
+type=rpm-md
+---------------------------------------------------------------
+
+yum install -y filebeat
+
+#자동실행
+sudo chkconfig --add filebeat
+
+#원본 설정파일 백업
+cd /etc/filebeat
+cp filebeat.yml filebeat.yml.org
+
+
+#기본설정파일에 수정
+
+vi /etc/filebeat/filebeat.yml
+------------------------------------------------------
+filebeat:
+  prospectors:
+  - document_type: log
+    encoding: utf-8
+    input_type: log
+    ignore_older: 24h
+    scan_frequency: 5s
+    clean_inactive: 48h  
+    clean_removed: true    
+    paths:
+      - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s     
+output.logstash:
+  hosts:
+  - 10.10.62.103:5555
+  loadbalance: true
+------------------------------------------------------
+
+#서비스 재실행하면 위 설정으로 동작
+service filebeat stop
+service filebeat start
+service filebeat status
+
+#로그확인
+tail -f /var/log/filebeat/filebeat
+
+#테스트 도큐먼트 삭제(elasticsearch서버 실행)
+curl -XDELETE http://localhost:9200/filebeat-test*
+
+#마지막으로 전송한 파일 위치 기록 확인
+cat /var/lib/filebeat/registry
+
+#파일을 처음 부터 재전송하려면 registry 초기화 한 후 서비스 재기동
+service filebeat stop
+echo "[]" > /var/lib/filebeat/registry
+
+service filebeat start
+service filebeat status
+
+
+
+
+#노트!!!!
+VI편집기로 열어서 라인추가하고 저장하면 처음부터 모두 다시 로딩함
+단, cat 으로 추가하면 라인 단위로 가져옴
+-> cat 등은 inode가 바뀌지 않음
+-> vi는 inode를 바꿈
+
+ 
+###############################
+후속검토 작업
+###############################
+
+-키바나는 @TIMESTMAP를 날짜 인덱싱하는데, 이것을 apptimestamp 필드로 교체하거나
+-또는 apptimestamp 속성을 text에서 date로 바꾸거나 
+
+
+
+
+
+
+
+
+
