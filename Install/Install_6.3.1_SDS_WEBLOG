@@ -1,1 +1,17 @@
 
+
+
+
+filebeat modules list
+
+filebeat modules enable apache2
+#filebeat modules disable apache2
+
+
+filebeat modules list
+
+ll   /etc/filebeat/module.d
+
+
+
+
