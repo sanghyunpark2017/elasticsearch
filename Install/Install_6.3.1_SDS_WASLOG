@@ -58,26 +58,37 @@ input {
   } 
 } 
 
-filter {
-  mutate {
-    remove_field => [ "beat", "offset", "source", "tags" ]
-  }
 
-  grok {
-    match => { "message" => "%{TIMESTAMP_ISO8601:apptimestamp} .*" }
-  }
- 
-  date {
-    match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+filter {
+  if [type] == "mywaslog" {
+    mutate {
+      remove_field => [ "beat", "offset", "source" ]
+    }
+    grok {
+      match => { "message" => "%{TIMESTAMP_ISO8601:apptimestamp} .*" }
+    }
+    date {
+      match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+    }
   }
 }
 
+
 output {
-  elasticsearch { hosts => "http://10.10.62.103:9200"
-  index => "filebeat-test-log"
+  if [type] == "mywaslog" 
+  {
+    elasticsearch { hosts => "http://10.10.62.103:9200"
+    index => "filebeat-test-waslog" }
+  }
+  else
+  {
+    elasticsearch { hosts => "http://10.10.62.103:9200"
+    index => "filebeat-test-log" }
   }
 }
 -----------------------------------------------------------
+#type에 mywaslog 식별자는 filebeat에서 구분자로 넣어주는 것임
+
 
 #서비스를 재기동 하면 위 설정을 동작
  
@@ -130,13 +141,15 @@ vi /etc/filebeat/filebeat.yml
 ------------------------------------------------------
 filebeat:
   prospectors:
-  - document_type: log
+  - input_type: log
+    fields_under_root: true
+    fields:
+      type: mywaslog
     encoding: utf-8
-    input_type: log
     ignore_older: 24h
     scan_frequency: 5s
     clean_inactive: 48h  
-    clean_removed: true    
+    clean_removed: true
     paths:
       - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
     multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
@@ -156,8 +169,11 @@ setup.kibana:
 output.logstash:
   hosts:
   - 10.10.62.103:5555
-  loadbalance: true
 ------------------------------------------------------
+#filebeat에서 구분해 줄 때 "fields_under_root: true" 밑에 2개 라인은 필수 조합임
+#filebeat.config.modules 항목은 modules.d 디렉토리 밑에 yml 파일 안에 정의함
+
+
 
 #서비스 재실행하면 위 설정으로 동작
 service filebeat stop
