@@ -7,8 +7,10 @@
 -3번 마스터(4GB) : none
 
 ##################################################################
+##################################################################
 2번 서버에 LOG STASH 설치
 #################################################################
+##################################################################
 
 rpm --import https://artifacts.elastic.co/GPG-KEY-elasticsearch
 
@@ -92,10 +94,11 @@ tail -f /var/log/logstash/logstash-plain.log
 systemctl enable logstash
 
 
-
+##################################################################
 ##################################################################
 WAS서버에 Filebeat
 #################################################################
+##################################################################
 
 rpm --import https://packages.elastic.co/GPG-KEY-elasticsearch
 
@@ -139,7 +142,17 @@ filebeat:
     multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
     multiline.negate: true
     multiline.match: after
-    multiline.timeout: 5s     
+    multiline.timeout: 5s
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+
+setup.kibana:
+
 output.logstash:
   hosts:
   - 10.10.62.103:5555
