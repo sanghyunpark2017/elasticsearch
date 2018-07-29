@@ -1,34 +1,6 @@
 
-#filebeat에는 여러 모듈이 있음
-cd /etc/filebeat/module.d
 
-filebeat modules list
-
-filebeat modules enable apache2
-#filebeat modules disable apache2
-
-filebeat modules list
-
-ll  /etc/filebeat/module.d
-
-vi /etc/filebeat/module.d/apache2.yml
--------------------------------------------------------------------------
-- module: apache2
-  access:
-    enabled: true
-    var.paths: ["/logs/weblog/dev.reach.access*.log"]
-  
-  error:
-    enabled: true
-    var.paths: ["/logs/weblog/error*.log"]
--------------------------------------------------------------------------
-
-########## 그러나 여기서는 filebeat 모듈 사용하지는 않음 
-
-
-#개요 
--filebeat는 아파치로그 2개(평문, SSL), WAS로그 1개 등 여러 로그 마다 type를 구분지어서 logstash로 보낸다.
--logstash는 type별로 (if~elseif~) 처리한다.
+#2개 이상의 로그 마다 type를 구분지어서 logstash로 보낸다. logstash는 type별로 (if~elseif~) 처리하게 한다.
 
 ###########################################
 Logstash설정
@@ -55,7 +27,7 @@ filter {
       match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
     }
   }
-  else if [type] == "myweblog" {
+  else if [type] == "myapplog" {
     mutate {
       remove_field => [ "beat", "offset", "source" ]
     }
@@ -74,12 +46,12 @@ output {
   if [type] == "mywaslog" 
   {
     elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "filebeat-test-waslog" }
+    index => "filebeat-test-mywaslog" }
   }
-  else if [type] == "myweblog"
+  else if [type] == "myapplog"
   {
     elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "filebeat-test-weblog" }
+    index => "filebeat-test-myapplog" }
   }
 }
 -----------------------------------------------------------
@@ -120,7 +92,7 @@ filebeat:
       - /logs/weblog/ssl_dev.reach.access*.log
 
 
-
+#여기 부터는 기본 셋팅
 filebeat.config.modules:
   path: ${path.config}/modules.d/*.yml
   reload.enabled: false
@@ -133,8 +105,8 @@ setup.kibana:
 output.logstash:
   hosts:
   - 10.10.62.103:5555
-  
-  
+------------------------------------------------------  
+-> ignonre_older는 clean_~ 과 함께 사용됨  
   
   
   
