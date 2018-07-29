@@ -1,6 +1,6 @@
 
-
-
+#filebeat에는 여러 모듈이 있음
+cd /etc/filebeat/module.d
 
 filebeat modules list
 
