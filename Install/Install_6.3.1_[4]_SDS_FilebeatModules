@@ -12,7 +12,7 @@ Filebeat모듈설정
 vi /etc/filebeat/filebeat.yml
 ------------------------------------------------------
 filebeat.inputs:
-- type: log
+  - type: log
     fields_under_root: true
     fields:
       type: mywaslog
@@ -162,17 +162,17 @@ filter {
 output {
   if [type] == "mywaslog" {
     elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "filebeat-test-mywaslog" }
+    index => "logstash-test-mywaslog" }
   }
 
   if [fileset][module] == "apache2" {
     if [fileset][name] == "access" {  
       elasticsearch { hosts => "http://10.10.62.103:9200"
-      index => "filebeat-test-myaccesslog" }    
+      index => "logstash-test-myaccesslog" }    
     }
     else if [fileset][name] == "error" {  
       elasticsearch { hosts => "http://10.10.62.103:9200"
-      index => "filebeat-test-myerrorlog" }    
+      index => "logstash-test-myerrorlog" }    
     }
   }
 
