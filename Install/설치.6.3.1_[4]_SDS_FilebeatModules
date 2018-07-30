@@ -1,8 +1,13 @@
 
-#주의
-geoip는 기본적으로 logstash-*로 시작할 때 셋팅된다.
-인덱스 이름을 이것과 다른 것으로 할 때는 콘솔에서 geoip셋팅을 별도로 해야 함 (그냥 logstash로 시작하는 것으로 사용하자. 귀차니즘)
-
+#filebeat
+-was로그는 filebeat가 전송
+-apache access로그는 filebeat module이 전송
+#logstash
+-인덱스는 logstash로 시작하는 것으로
+-waslog에서 날짜 빼는 것 정상
+-accesslog에서 필터링 하는 것은 홈페이지 셋팅을 가지고 왔고, 데이터는 잘 분활해서 처리되나 키바나에서 geo map 안됨 (geo.location 배열처리안되어있음)
+->필터링 쪽은 손봐야 할듯 
+-단, 필터링 쪽에 일반적인 구문을 사용하면 geo.location
 
 
 #############################################
@@ -84,7 +89,7 @@ vi /etc/filebeat/modules.d/apache2.yml
 
 
 #############################################
-Logstash설정
+Logstash설정 (홈페이지 설정 -> geo map 안됨)
 #############################################
 
 #logstash는 filebeat의 기본설정을 받는 주는 것(현재는 싱글로그임)과
@@ -188,6 +193,96 @@ output {
 
 
 
+#############################################
+Logstash설정 (일반설정 -> geo map 됨)
+#############################################
+
+vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
+-----------------------------------------------------------
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+
+
+filter {
+  if [type] == "mywaslog" {
+    mutate {
+      remove_field => [ "beat", "offset", "source" ]
+    }
+    grok {
+      match => { "message" => "%{TIMESTAMP_ISO8601:apptimestamp} .*" }
+    }
+    date {
+      match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+    }
+  }
+
+  if [fileset][module] == "apache2" {
+    if [fileset][name] == "access" {
+
+      grok {
+        match => { "message" => "%{COMMONAPACHELOG}" }
+      }
+
+      date {
+        match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
+      }
+
+      geoip {
+        source => "clientip"
+      }
+    
+    
+    }
+
+
+    else if [fileset][name] == "error" {
+      grok {
+        match => { "message" => ["\[%{APACHE_TIME:[apache2][error][timestamp]}\] \[%{LOGLEVEL:[apache2][error][level]}\]( \[client %{IPORHOST:[apache2][error][client]}\])? %{GREEDYDATA:[apache2][error][message]}",
+          "\[%{APACHE_TIME:[apache2][error][timestamp]}\] \[%{DATA:[apache2][error][module]}:%{LOGLEVEL:[apache2][error][level]}\] \[pid %{NUMBER:[apache2][error][pid]}(:tid %{NUMBER:[apache2][error][tid]})?\]( \[client %{IPORHOST:[apache2][error][client]}\])? %{GREEDYDATA:[apache2][error][message1]}" ] }
+        pattern_definitions => {
+          "APACHE_TIME" => "%{DAY} %{MONTH} %{MONTHDAY} %{TIME} %{YEAR}"
+        }
+        remove_field => "message"
+      }
+      mutate {
+        rename => { "[apache2][error][message1]" => "[apache2][error][message]" }
+      }
+      date {
+        match => [ "[apache2][error][timestamp]", "EEE MMM dd H:m:s YYYY", "EEE MMM dd H:m:s.SSSSSS YYYY" ]
+        remove_field => "[apache2][error][timestamp]"
+      }
+    }
+  }
+  
+
+  
+  
+##### filter end #####
+}
+
+
+output {
+  if [type] == "mywaslog" {
+    elasticsearch { hosts => "http://10.10.62.103:9200"
+    index => "logstash-test-mywaslog" }
+  }
+
+  if [fileset][module] == "apache2" {
+    if [fileset][name] == "access" {  
+      elasticsearch { hosts => "http://10.10.62.103:9200"
+      index => "logstash-test-myaccesslog" }    
+    }
+    else if [fileset][name] == "error" {  
+      elasticsearch { hosts => "http://10.10.62.103:9200"
+      index => "logstash-test-myerrorlog" }    
+    }
+  }
+
+
+}
 
 
 
