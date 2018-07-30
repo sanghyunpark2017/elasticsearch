@@ -1,9 +1,5 @@
 
-
-#filebeat에서 apache2 모듈을 사용해서 로그전송 시 ip주소를 위치정보로 변환해서 추가 필드에 생성은하나
-#이것을 kibana에서 geohash 처리가 안됨(또는 모르겠음)
-#따라서 액세스로그를 filebeat 모듈을 사용하지 않고 일반적으로 처리함
-
+#kibana에서 geoip 아이콘이 보이고 MAP도 정상
 
 
 ###########################################
@@ -55,12 +51,12 @@ output {
   if [type] == "mywaslog" 
   {
     elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "filebeat-test-mywaslog" }
+    index => "logstash-test-mywaslog" }
   }
   else if [type] == "myweblog"
   {
     elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "filebeat-test-myweblog" }
+    index => "logstash-test-myweblog" }
   }
 }
 -----------------------------------------------------------
