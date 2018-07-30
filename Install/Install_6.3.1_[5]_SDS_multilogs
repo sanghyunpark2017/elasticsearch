@@ -1,4 +1,126 @@
 
 
-#filebeat에서 apache2 모듈을 사용해서 로그전송 시 geohash 처리가 안됨(또는 아직 모름)
+#filebeat에서 apache2 모듈을 사용해서 로그전송 시 ip주소를 위치정보로 변환해서 추가 필드에 생성은하나
+#이것을 kibana에서 geohash 처리가 안됨(또는 모르겠음)
+#따라서 액세스로그를 filebeat 모듈을 사용하지 않고 일반적으로 처리함
+
+
+
+###########################################
+Logstash설정
+###########################################
+
+vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
+-----------------------------------------------------------
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+
+
+filter {
+  if [type] == "mywaslog" {
+    mutate {
+      remove_field => [ "beat", "offset", "source" ]
+    }
+    grok {
+      match => { "message" => "%{TIMESTAMP_ISO8601:apptimestamp} .*" }
+    }
+    date {
+      match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+    }
+  }
+  else if [type] == "myweblog" {
+
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
+    }
+
+    geoip {
+      source => "clientip"
+    }
+    
+    
+  }
+
+}
+
+
+output {
+  if [type] == "mywaslog" 
+  {
+    elasticsearch { hosts => "http://10.10.62.103:9200"
+    index => "filebeat-test-mywaslog" }
+  }
+  else if [type] == "myapplog"
+  {
+    elasticsearch { hosts => "http://10.10.62.103:9200"
+    index => "filebeat-test-myapplog" }
+  }
+}
+-----------------------------------------------------------
+
+
+
+
+###########################################
+Filebeat설정
+###########################################
+vi /etc/filebeat/filebeat.yml
+------------------------------------------------------
+filebeat:
+  prospectors:
+  - input_type: log
+    fields_under_root: true
+    fields:
+      type: mywaslog
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 5s
+    clean_inactive: 48h  
+    clean_removed: true
+    paths:
+      - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s
+  - input_type: log
+    fields_under_root: true
+    fields:
+      type: myweblog
+    encoding: utf-8
+    scan_frequency: 5s
+    paths:
+      - /logs/weblog/ssl_dev.reach.access*.log
+
+setup.kibana:
+
+output.logstash:
+  hosts:
+  - 10.10.62.103:5555
+------------------------------------------------------  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
