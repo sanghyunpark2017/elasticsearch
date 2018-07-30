@@ -57,10 +57,10 @@ output {
     elasticsearch { hosts => "http://10.10.62.103:9200"
     index => "filebeat-test-mywaslog" }
   }
-  else if [type] == "myapplog"
+  else if [type] == "myweblog"
   {
     elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "filebeat-test-myapplog" }
+    index => "filebeat-test-myweblog" }
   }
 }
 -----------------------------------------------------------
@@ -71,18 +71,19 @@ output {
 ###########################################
 Filebeat설정
 ###########################################
+
+
 vi /etc/filebeat/filebeat.yml
 ------------------------------------------------------
-filebeat:
-  prospectors:
-  - input_type: log
+filebeat.inputs:
+  - type: log
     fields_under_root: true
     fields:
       type: mywaslog
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 240h  #need for update
     scan_frequency: 5s
-    clean_inactive: 48h  
+    clean_inactive: 480h  #need for update
     clean_removed: true
     paths:
       - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
@@ -90,23 +91,25 @@ filebeat:
     multiline.negate: true
     multiline.match: after
     multiline.timeout: 5s
-  - input_type: log
+  - type: log
     fields_under_root: true
     fields:
       type: myweblog
     encoding: utf-8
+    ignore_older: 240h  #need for update
     scan_frequency: 5s
+    clean_inactive: 480h  #need for update
+    clean_removed: true
     paths:
-      - /logs/weblog/ssl_dev.reach.access*.log
+      - /logs/weblog/ssl_dev.reach.access.*.log
+
 
 setup.kibana:
 
 output.logstash:
   hosts:
   - 10.10.62.103:5555
-------------------------------------------------------  
-
-
+------------------------------------------------------
 
 
 
