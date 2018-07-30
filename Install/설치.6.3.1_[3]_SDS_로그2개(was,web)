@@ -68,6 +68,20 @@ output {
 Filebeat설정
 ###########################################
 
+#혹시 module 활성화 되어 있으면 disable
+
+#filebeat에는 여러 모듈이 있음
+cd /etc/filebeat/modules.d
+filebeat modules list
+
+#이 중에서 apache2 모듈을 활성화 시킴
+filebeat modules enable apache2
+filebeat modules list
+
+#비활성화
+filebeat modules disable apache2
+
+
 
 vi /etc/filebeat/filebeat.yml
 ------------------------------------------------------
