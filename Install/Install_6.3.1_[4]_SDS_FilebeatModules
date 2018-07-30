@@ -4,7 +4,6 @@ Filebeat모듈설정
 #############################################
 
 #filebeat 설정은 기본설정과 모듈설정 2군데가 있고 각각 동시에 처리함
-#멀티라인은 prospectors로만 테스트함. prospector는 곧 없어질 것이나 이것을 제외한 방식은 추후 확인해야 할 듯.
 
 ################# 
 2-1. 기본설정
@@ -12,16 +11,15 @@ Filebeat모듈설정
 
 vi /etc/filebeat/filebeat.yml
 ------------------------------------------------------
-filebeat:
-  prospectors:
-  - input_type: log
+filebeat.inputs:
+- type: log
     fields_under_root: true
     fields:
       type: mywaslog
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 240h  #need for update
     scan_frequency: 5s
-    clean_inactive: 48h  
+    clean_inactive: 480h  #need for update
     clean_removed: true
     paths:
       - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
