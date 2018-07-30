@@ -4,6 +4,7 @@ Filebeat모듈설정
 #############################################
 
 #filebeat 설정은 기본설정과 모듈설정 2군데가 있고 각각 동시에 처리함
+#멀티라인은 prospectors로만 테스트함. prospector는 곧 없어질 것이나 이것을 제외한 방식은 추후 확인해야 할 듯.
 
 ################# 
 2-1. 기본설정
@@ -109,7 +110,8 @@ filter {
       match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
     }
   }
-  else if [fileset][module] == "apache2" {
+
+  if [fileset][module] == "apache2" {
     if [fileset][name] == "access" {
       grok {
         match => { "message" => ["%{IPORHOST:[apache2][access][remote_ip]} - %{DATA:[apache2][access][user_name]} \[%{HTTPDATE:[apache2][access][time]}\] \"%{WORD:[apache2][access][method]} %{DATA:[apache2][access][url]} HTTP/%{NUMBER:[apache2][access][http_version]}\" %{NUMBER:[apache2][access][response_code]} %{NUMBER:[apache2][access][body_sent][bytes]}( \"%{DATA:[apache2][access][referrer]}\")?( \"%{DATA:[apache2][access][agent]}\")?",
@@ -151,6 +153,10 @@ filter {
       }
     }
   }
+  
+
+  
+  
 ##### filter end #####
 }
 
@@ -160,7 +166,8 @@ output {
     elasticsearch { hosts => "http://10.10.62.103:9200"
     index => "filebeat-test-mywaslog" }
   }
-  else if [fileset][module] == "apache2" {
+
+  if [fileset][module] == "apache2" {
     if [fileset][name] == "access" {  
       elasticsearch { hosts => "http://10.10.62.103:9200"
       index => "filebeat-test-myaccesslog" }    
