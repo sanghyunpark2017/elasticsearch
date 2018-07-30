@@ -1,2 +1,4 @@
 
 
+#filebeat에서 apache2 모듈을 사용해서 로그전송 시 geohash 처리가 안됨(또는 아직 모름)
+
