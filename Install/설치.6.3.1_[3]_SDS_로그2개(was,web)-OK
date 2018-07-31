@@ -161,6 +161,8 @@ systemctl start logstash
 systemctl status logstash
 tail -f /var/log/logstash/logstash-plain.log
 
+6.filebeat 서비스 중지
+service filebeat stop
 
 6.filebeat 로그 전송 초기화
 echo "[]" > /var/lib/filebeat/registry
@@ -170,20 +172,6 @@ cat  /var/lib/filebeat/registry
 service filebeat start
 service filebeat status
 tail -f /var/log/filebeat/filebeat
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
