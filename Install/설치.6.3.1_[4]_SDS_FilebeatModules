@@ -1,4 +1,10 @@
 
+#note
+filebeat 모듈에서는 geoip.location 처리가 안되서 일단 중지 또한 GMP +9 처리도 안해봄
+
+
+
+
 #filebeat
 -was로그는 filebeat가 전송
 -apache access로그는 filebeat module이 전송
