@@ -154,19 +154,19 @@ curl -XDELETE http://localhost:9200/filebeat-*
 curl -XDELETE http://localhost:9200/logstash-*
 curl -XDELETE http://localhost:9200/.mon*
 
-kibana index 삭제
+4.kibana index 삭제
 
-4.logstash 실행
+5.logstash 실행
 systemctl start logstash
 systemctl status logstash
 tail -f /var/log/logstash/logstash-plain.log
 
 
-5.filebeat 로그 전송 초기화
+6.filebeat 로그 전송 초기화
 echo "[]" > /var/lib/filebeat/registry
 cat  /var/lib/filebeat/registry
 
-6.filebeat 실행
+7.filebeat 실행
 service filebeat start
 service filebeat status
 tail -f /var/log/filebeat/filebeat
