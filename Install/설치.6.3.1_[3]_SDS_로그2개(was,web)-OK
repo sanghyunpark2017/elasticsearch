@@ -34,7 +34,8 @@ filter {
     }
 
     date {
-      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss Z" ]
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
     }
 
     geoip {
@@ -120,6 +121,46 @@ output.logstash:
   hosts:
   - 10.10.62.103:5555
 ------------------------------------------------------
+
+
+
+#기타. 초기화 재로딩
+
+
+1. filebeat 중지
+service filebeat stop
+cat  /var/lib/filebeat/registry
+
+2. logstash 중지
+systemctl stop logstash
+
+3. 오브젝트 삭제
+curl -XDELETE http://localhost:9200/filebeat-*
+curl -XDELETE http://localhost:9200/logstash-*
+curl -XDELETE http://localhost:9200/.mon*
+
+kibana index 삭제
+
+4.logstash 실행
+systemctl start logstash
+systemctl status logstash
+tail -f /var/log/logstash/logstash-plain.log
+
+
+5.filebeat 로그 전송 초기화
+echo "[]" > /var/lib/filebeat/registry
+cat  /var/lib/filebeat/registry
+
+6.filebeat 실행
+service filebeat start
+service filebeat status
+tail -f /var/log/filebeat/filebeat
+
+
+
+
+
+
 
 
 
