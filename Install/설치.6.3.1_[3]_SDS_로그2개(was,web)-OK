@@ -71,20 +71,6 @@ output {
 Filebeat설정
 ###########################################
 
-#혹시 module 활성화 되어 있으면 disable
-
-#filebeat에는 여러 모듈이 있음
-cd /etc/filebeat/modules.d
-filebeat modules list
-
-#이 중에서 apache2 모듈을 활성화 시킴
-filebeat modules enable apache2
-filebeat modules list
-
-#비활성화
-filebeat modules disable apache2
-
-
 
 vi /etc/filebeat/filebeat.yml
 ------------------------------------------------------
@@ -116,7 +102,13 @@ filebeat.inputs:
     paths:
       - /logs/weblog/ssl_dev.reach.access.*.log
 
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
 
+setup.template.settings:
+  index.number_of_shards: 3
+  
 setup.kibana:
 
 output.logstash:
@@ -125,9 +117,30 @@ output.logstash:
 ------------------------------------------------------
 
 
+######################
+#filebeat modules
+######################
 
+#filebeat.yml 기본 설정 안에 "filebeat.config.modules:" 설정을 빼도 되지만 이 경우 "filebeat modules" 명령어 오류 발생함
+#쓰지 않을 것이면 빼도 되나 나중에 사용할 수 있으니 넣어둔다.
+
+#filebeat에는 여러 모듈이 있음
+cd /etc/filebeat/modules.d
+filebeat modules list
+
+#이 중에서 apache2 모듈을 활성화 시킴
+filebeat modules enable apache2
+filebeat modules list
+
+#비활성화
+filebeat modules disable apache2
+
+
+
+
+######################
 #기타. 초기화 재로딩
-
+######################
 
 1. filebeat 중지
 service filebeat stop
