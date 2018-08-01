@@ -36,18 +36,19 @@ filter {
       match => { "message" => "%{YEAR:year}-%{MONTHNUM:month}-%{MONTHDAY:day} %{TIME:time} .*" }
       add_field => [ "received_at", "%{@timestamp}" ]
     }
-    mutate {
-      add_field => {
+    mutate {
+      add_field => {
       "timestamp" => "%{year}-%{month}-%{day} %{time}"
       }
     }
-    date {
+    date {
       match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss" ]
     }
     mutate {
       remove_field => [ "beat", "offset", "source", "timestamp", "year", "month", "day", "time" ]
       }
     }
+  
 
 #--------------------------------------------------------------------------
   else if [type] == "dev-https-weblog" {
