@@ -95,7 +95,7 @@ output {
     elasticsearch { 
       hosts => "http://10.10.62.103:9200"
       action => "index"
-      index => "logstash-dev-api-waslog-%{YYYY.MM.dd}" 
+      index => "logstash-dev-api-waslog-%{+YYYY.MM.dd}" 
     }
   }
 #--------------------------------------------------------------------------
@@ -104,7 +104,7 @@ output {
     elasticsearch { 
       hosts => "http://10.10.62.103:9200"
       action => "index"
-      index => "logstash-dev-https-weblog-%{YYYY.MM.dd}" 
+      index => "logstash-dev-https-weblog-%{+YYYY.MM.dd}" 
     }
   }
 #--------------------------------------------------------------------------
@@ -113,7 +113,7 @@ output {
     elasticsearch { 
       hosts => "http://10.10.62.103:9200"
       action => "index"
-      index => "logstash-dev-http-weblog-%{YYYY.MM.dd}" 
+      index => "logstash-dev-http-weblog-%{+YYYY.MM.dd}" 
     }
   }
 #--------------------------------------------------------------------------
