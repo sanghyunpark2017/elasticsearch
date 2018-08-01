@@ -1,0 +1,674 @@
+
+#먼저 각 서버의 filebeat 3개 설정을 한 후 logstash TCP 5555 쪽에서 한번에 처리하게 설정한다
+#앞서 개발서버 셋팅을 조금 수정(식별자 등)
+
+#운영서버 : prd-api, prd-https, prd-http
+#개발서버 : dev-api, dev-https, dev-http
+
+########################################
+# Filebeat(prd1/2 공통)
+########################################
+#운영서버 2대 모두 경로는 동일하고, 로그파일이름의 차이점은 호스트이름인데 이 것은 *으로 처리한다
+
+cd /etc/filebeat
+vi /etc/filebeat/filebeat.yml
+========================================================================================================
+filebeat.inputs:
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: prd-api
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 10s
+    clean_inactive: 48h
+    clean_removed: true
+    paths:
+      - /logs/waslog/reach/reach1/sds_api_*.log
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: prd-https
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 10s
+    clean_inactive: 48h
+    clean_removed: true
+    paths:
+      - /logs/weblog/reach/ssl_reach.access.*.log
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: prd-http
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 10s
+    clean_inactive: 48h
+    clean_removed: true
+    paths:
+      - /logs/weblog/reach/reach.access.*.log
+#--------------------------------------------------------------------------
+
+
+### Modules & Kibana
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+  
+setup.kibana:
+
+### OUTPUT SECTION
+output.logstash:
+  hosts:
+  - 10.10.62.103:5555
+========================================================================================================
+
+
+
+########################################
+# Filebeat(dev)
+########################################
+
+cd /etc/filebeat
+vi /etc/filebeat/filebeat.yml
+========================================================================================================
+filebeat.inputs:
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: dev-api
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 10s
+    clean_inactive: 48h
+    clean_removed: true
+    paths:
+      - /logs/waslog/sds_api_*.log
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: dev-https
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 10s
+    clean_inactive: 48h
+    clean_removed: true
+    paths:
+      - /logs/weblog/ssl_dev.reach.access.*.log
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: dev-http
+    encoding: utf-8
+    ignore_older: 24h
+    scan_frequency: 10s
+    clean_inactive: 48h
+    clean_removed: true
+    paths:
+      - /logs/weblog/dev.reach.access.*.log
+#--------------------------------------------------------------------------
+
+
+### Modules & Kibana
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+  
+setup.kibana:
+
+### OUTPUT SECTION
+output.logstash:
+  hosts:
+  - 10.10.62.103:5555
+========================================================================================================
+
+
+
+########################################
+# LogStash(ES 2번 서버)
+########################################
+#기존 개발서버 셋팅에 운영서버 셋팅을 더한다
+#개발에서 필터링 테스트 등이 있을 수 있으니 if 문으로 운영/개발 따로 처리한다
+
+#운영서버 : prd-api, prd-https, prd-http
+#개발서버 : dev-api, dev-https, dev-http
+
+
+cd /etc/logstash/conf.d
+vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
+============================================================================================================
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+
+### FILTER SECTION
+
+filter {
+
+#--------------------------------------------------------------------------
+  if [type] == "prd-api" {
+    grok {
+      match => { "message" => "%{YEAR:year}-%{MONTHNUM:month}-%{MONTHDAY:day} %{TIME:time} .*" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+    }
+    mutate {
+      add_field => {
+      "timestamp" => "%{year}-%{month}-%{day} %{time}"
+      }
+    }
+    date {
+      match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss" ]
+    }
+    mutate {
+      remove_field => [ "beat", "offset", "source", "timestamp", "year", "month", "day", "time" ]
+      }
+    }
+#--------------------------------------------------------------------------    
+  else if [type] == "dev-api" {
+    grok {
+      match => { "message" => "%{YEAR:year}-%{MONTHNUM:month}-%{MONTHDAY:day} %{TIME:time} .*" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+    }
+    mutate {
+      add_field => {
+      "timestamp" => "%{year}-%{month}-%{day} %{time}"
+      }
+    }
+    date {
+      match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss" ]
+    }
+    mutate {
+      remove_field => [ "beat", "offset", "source", "timestamp", "year", "month", "day", "time" ]
+      }
+    }
+#--------------------------------------------------------------------------
+  else if [type] == "prd-https" {
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
+    }
+
+    geoip {
+      source => "clientip"
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-https" {
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
+    }
+
+    geoip {
+      source => "clientip"
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "prd-http" {
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
+    }
+
+    geoip {
+      source => "clientip"
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-http" {
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
+    }
+
+    geoip {
+      source => "clientip"
+    }
+  }  
+#--------------------------------------------------------------------------
+}  #End of Filter
+
+
+### OUTPUT SECTION
+
+
+output {
+#--------------------------------------------------------------------------
+  if [type] == "prd-api" 
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-prd-api-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-api" 
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-api-%{+YYYY.MM.dd}" 
+    }
+  }  
+#--------------------------------------------------------------------------
+  else if [type] == "prd-https"
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-prd-https-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-https"
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-https-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "prd-http"
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-prd-http-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-http"
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-http-%{+YYYY.MM.dd}" 
+    }
+  }  
+#--------------------------------------------------------------------------
+
+}
+============================================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#APP로그 평문데이터(string)으로 부터 "yyyy-MM-dd HH:mm:ss"의 날짜형식(string)을 @timestamp(date속성)으로 변경하는데 고생함(6시간 이상 투자)
+#@timestamp : 평문에서의 날짜 (date속성)
+#received_at : logstash(6.3.1) 가 처리한 날짜(date속성)
+
+
+
+###########################################
+###########################################
+Logstash설정
+###########################################
+###########################################
+
+cd /etc/logstash/conf.d
+vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##########################
+### INPUT SECTION
+##########################
+
+input { 
+  beats { 
+    port => "5555" 
+  } 
+} 
+
+##########################
+### FILTER SECTION
+##########################
+
+filter {
+
+#--------------------------------------------------------------------------
+  if [type] == "dev-api-waslog" {
+    grok {
+      match => { "message" => "%{YEAR:year}-%{MONTHNUM:month}-%{MONTHDAY:day} %{TIME:time} .*" }
+      add_field => [ "received_at", "%{@timestamp}" ]
+    }
+    mutate {
+      add_field => {
+      "timestamp" => "%{year}-%{month}-%{day} %{time}"
+      }
+    }
+    date {
+      match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss" ]
+    }
+    mutate {
+      remove_field => [ "beat", "offset", "source", "timestamp", "year", "month", "day", "time" ]
+      }
+    }
+  
+
+#--------------------------------------------------------------------------
+  else if [type] == "dev-https-weblog" {
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
+    }
+
+    geoip {
+      source => "clientip"
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-http-weblog" {
+    grok {
+      match => { "message" => "%{COMMONAPACHELOG}" }
+    }
+
+    date {
+      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
+      timezone => "UTC"
+    }
+
+    geoip {
+      source => "clientip"
+    }
+  }
+#--------------------------------------------------------------------------
+}  #End of Filter
+
+
+##########################
+### OUTPUT SECTION
+##########################
+
+
+output {
+  if [type] == "dev-api-waslog" 
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-api-waslog-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-https-weblog"
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-https-weblog-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+  else if [type] == "dev-http-weblog"
+  {
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-http-weblog-%{+YYYY.MM.dd}" 
+    }
+  }
+#--------------------------------------------------------------------------
+
+
+
+}
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+###########################################
+###########################################
+Filebeat설정 (개발서버)
+###########################################
+###########################################
+
+cd /etc/filebeat
+vi /etc/filebeat/filebeat.yml
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+filebeat.inputs:
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: dev-api-waslog
+    encoding: utf-8
+    ignore_older: 240h  #need for update
+    scan_frequency: 5s
+    clean_inactive: 480h  #need for update
+    clean_removed: true
+    paths:
+      - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
+    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
+    multiline.negate: true
+    multiline.match: after
+    multiline.timeout: 5s
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: dev-https-weblog
+    encoding: utf-8
+    ignore_older: 240h  #need for update
+    scan_frequency: 5s
+    clean_inactive: 480h  #need for update
+    clean_removed: true
+    paths:
+      - /logs/weblog/ssl_dev.reach.access.*.log
+#--------------------------------------------------------------------------
+  - type: log
+    fields_under_root: true
+    fields:
+      type: dev-http-weblog
+    encoding: utf-8
+    ignore_older: 240h  #need for update
+    scan_frequency: 5s
+    clean_inactive: 480h  #need for update
+    clean_removed: true
+    paths:
+      - /logs/weblog/dev.reach.access.*.log
+#--------------------------------------------------------------------------
+
+
+##########################
+### Modules & Kibana
+##########################
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+  
+setup.kibana:
+
+
+##########################
+### OUTPUT SECTION
+##########################
+
+output.logstash:
+  hosts:
+  - 10.10.62.103:5555
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+######################
+#filebeat modules
+######################
+
+#filebeat.yml 기본 설정 안에 "filebeat.config.modules:" 설정을 빼도 되지만 이 경우 "filebeat modules" 명령어 오류 발생함
+#쓰지 않을 것이면 빼도 되나 나중에 사용할 수 있으니 넣어둔다.
+
+#filebeat에는 여러 모듈이 있음
+cd /etc/filebeat/modules.d
+filebeat modules list
+
+#이 중에서 apache2 모듈을 활성화 시킴
+filebeat modules enable apache2
+filebeat modules list
+
+#비활성화
+filebeat modules disable apache2
+
+
+
+
+######################
+#기타. 초기화 재로딩
+######################
+
+1. filebeat 중지
+service filebeat stop
+cat  /var/lib/filebeat/registry
+
+
+2. logstash 중지
+systemctl stop logstash
+
+3. 오브젝트 삭제
+curl -XDELETE http://localhost:9200/filebeat-*
+curl -XDELETE http://localhost:9200/logstash-*
+curl -XDELETE http://localhost:9200/.mon*
+
+4.kibana index 삭제
+
+5.logstash 실행
+systemctl start logstash
+systemctl status logstash
+tail -f /var/log/logstash/logstash-plain.log
+
+
+6.filebeat 로그 전송 초기화 및 실행
+echo "[]" > /var/lib/filebeat/registry
+cat  /var/lib/filebeat/registry
+
+
+
+service filebeat start
+service filebeat status
+tail -f /var/log/filebeat/filebeat
+
+
