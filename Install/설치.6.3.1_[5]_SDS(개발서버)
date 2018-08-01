@@ -1,4 +1,8 @@
 
+#APP로그 평문데이터(string)으로 부터 "yyyy-MM-dd HH:mm:ss"의 날짜형식(string)을 @timestamp(date속성)으로 변경하는데 고생함(6시간 이상 투자)
+#@timestamp : 평문에서의 날짜 (date속성)
+#received_at : logstash(6.3.1) 가 처리한 날짜(date속성)
+
 
 
 ###########################################
@@ -28,16 +32,23 @@ filter {
 
 #--------------------------------------------------------------------------
   if [type] == "dev-api-waslog" {
-    mutate {
-      remove_field => [ "beat", "offset", "source" ]
-    }
     grok {
-      match => { "message" => "%{TIMESTAMP_ISO8601:apptimestamp} .*" }
+      match => { "message" => "%{YEAR:year}-%{MONTHNUM:month}-%{MONTHDAY:day} %{TIME:time} .*" }
+      add_field => [ "received_at", "%{@timestamp}" ]
     }
-    date {
-      match => ["apptimestamp", "yyyy:MM:DD HH:mm:ss"]
+    mutate {
+      add_field => {
+      "timestamp" => "%{year}-%{month}-%{day} %{time}"
+      }
     }
-  }
+    date {
+      match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss" ]
+    }
+    mutate {
+      remove_field => [ "beat", "offset", "source", "timestamp", "year", "month", "day", "time" ]
+      }
+    }
+
 #--------------------------------------------------------------------------
   else if [type] == "dev-https-weblog" {
     grok {
