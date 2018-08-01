@@ -92,20 +92,29 @@ filter {
 output {
   if [type] == "dev-api-waslog" 
   {
-    elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "logstash-dev-api-waslog" }
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-api-waslog-%{YYYY.MM.dd}" 
+    }
   }
 #--------------------------------------------------------------------------
   else if [type] == "dev-https-weblog"
   {
-    elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "logstash-dev-https-weblog" }
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-https-weblog-%{YYYY.MM.dd}" 
+    }
   }
 #--------------------------------------------------------------------------
   else if [type] == "dev-http-weblog"
   {
-    elasticsearch { hosts => "http://10.10.62.103:9200"
-    index => "logstash-dev-http-weblog" }
+    elasticsearch { 
+      hosts => "http://10.10.62.103:9200"
+      action => "index"
+      index => "logstash-dev-http-weblog-%{YYYY.MM.dd}" 
+    }
   }
 #--------------------------------------------------------------------------
 
