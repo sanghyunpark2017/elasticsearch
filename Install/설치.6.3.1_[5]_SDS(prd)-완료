@@ -20,9 +20,9 @@ filebeat.inputs:
     fields:
       type: prd-api
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 72h
     scan_frequency: 10s
-    clean_inactive: 48h
+    clean_inactive: 240h
     clean_removed: true
     paths:
       - /logs/waslog/reach/reach1/sds_api_*.log
@@ -36,9 +36,9 @@ filebeat.inputs:
     fields:
       type: prd-https
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 72h
     scan_frequency: 10s
-    clean_inactive: 48h
+    clean_inactive: 240h
     clean_removed: true
     paths:
       - /logs/weblog/reach/ssl_reach.access.*.log
@@ -48,9 +48,9 @@ filebeat.inputs:
     fields:
       type: prd-http
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 72h
     scan_frequency: 10s
-    clean_inactive: 48h
+    clean_inactive: 240h
     clean_removed: true
     paths:
       - /logs/weblog/reach/reach.access.*.log
@@ -89,9 +89,9 @@ filebeat.inputs:
     fields:
       type: dev-api
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 72h
     scan_frequency: 10s
-    clean_inactive: 48h
+    clean_inactive: 240h
     clean_removed: true
     paths:
       - /logs/waslog/sds_api_*.log
@@ -105,9 +105,9 @@ filebeat.inputs:
     fields:
       type: dev-https
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 72h
     scan_frequency: 10s
-    clean_inactive: 48h
+    clean_inactive: 240h
     clean_removed: true
     paths:
       - /logs/weblog/ssl_dev.reach.access.*.log
@@ -117,9 +117,9 @@ filebeat.inputs:
     fields:
       type: dev-http
     encoding: utf-8
-    ignore_older: 24h
+    ignore_older: 72h
     scan_frequency: 10s
-    clean_inactive: 48h
+    clean_inactive: 240h
     clean_removed: true
     paths:
       - /logs/weblog/dev.reach.access.*.log
@@ -331,309 +331,50 @@ output {
 ============================================================================================================
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#APP로그 평문데이터(string)으로 부터 "yyyy-MM-dd HH:mm:ss"의 날짜형식(string)을 @timestamp(date속성)으로 변경하는데 고생함(6시간 이상 투자)
-#@timestamp : 평문에서의 날짜 (date속성)
-#received_at : logstash(6.3.1) 가 처리한 날짜(date속성)
-
-
-
-###########################################
-###########################################
-Logstash설정
-###########################################
-###########################################
-
-cd /etc/logstash/conf.d
-vi /etc/logstash/conf.d/logstash-pipeline-5555.conf
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##########################
-### INPUT SECTION
-##########################
-
-input { 
-  beats { 
-    port => "5555" 
-  } 
-} 
-
-##########################
-### FILTER SECTION
-##########################
-
-filter {
-
-#--------------------------------------------------------------------------
-  if [type] == "dev-api-waslog" {
-    grok {
-      match => { "message" => "%{YEAR:year}-%{MONTHNUM:month}-%{MONTHDAY:day} %{TIME:time} .*" }
-      add_field => [ "received_at", "%{@timestamp}" ]
-    }
-    mutate {
-      add_field => {
-      "timestamp" => "%{year}-%{month}-%{day} %{time}"
-      }
-    }
-    date {
-      match => [ "timestamp" , "yyyy-MM-dd HH:mm:ss" ]
-    }
-    mutate {
-      remove_field => [ "beat", "offset", "source", "timestamp", "year", "month", "day", "time" ]
-      }
-    }
-  
-
-#--------------------------------------------------------------------------
-  else if [type] == "dev-https-weblog" {
-    grok {
-      match => { "message" => "%{COMMONAPACHELOG}" }
-    }
-
-    date {
-      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
-      timezone => "UTC"
-    }
-
-    geoip {
-      source => "clientip"
-    }
-  }
-#--------------------------------------------------------------------------
-  else if [type] == "dev-http-weblog" {
-    grok {
-      match => { "message" => "%{COMMONAPACHELOG}" }
-    }
-
-    date {
-      match => [ "timestamp", "dd/MMM/yyyy:HH:mm:ss +0900" ]
-      timezone => "UTC"
-    }
-
-    geoip {
-      source => "clientip"
-    }
-  }
-#--------------------------------------------------------------------------
-}  #End of Filter
-
-
-##########################
-### OUTPUT SECTION
-##########################
-
-
-output {
-  if [type] == "dev-api-waslog" 
-  {
-    elasticsearch { 
-      hosts => "http://10.10.62.103:9200"
-      action => "index"
-      index => "logstash-dev-api-waslog-%{+YYYY.MM.dd}" 
-    }
-  }
-#--------------------------------------------------------------------------
-  else if [type] == "dev-https-weblog"
-  {
-    elasticsearch { 
-      hosts => "http://10.10.62.103:9200"
-      action => "index"
-      index => "logstash-dev-https-weblog-%{+YYYY.MM.dd}" 
-    }
-  }
-#--------------------------------------------------------------------------
-  else if [type] == "dev-http-weblog"
-  {
-    elasticsearch { 
-      hosts => "http://10.10.62.103:9200"
-      action => "index"
-      index => "logstash-dev-http-weblog-%{+YYYY.MM.dd}" 
-    }
-  }
-#--------------------------------------------------------------------------
-
-
-
-}
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
-
-
-###########################################
-###########################################
-Filebeat설정 (개발서버)
-###########################################
-###########################################
-
-cd /etc/filebeat
-vi /etc/filebeat/filebeat.yml
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-filebeat.inputs:
-#--------------------------------------------------------------------------
-  - type: log
-    fields_under_root: true
-    fields:
-      type: dev-api-waslog
-    encoding: utf-8
-    ignore_older: 240h  #need for update
-    scan_frequency: 5s
-    clean_inactive: 480h  #need for update
-    clean_removed: true
-    paths:
-      - /logs/waslog/sds_api_T1CSDSAPIDEV01.log
-    multiline.pattern: '^[[0-9]{4}-[0-9]{2}-[0-9]{2}'
-    multiline.negate: true
-    multiline.match: after
-    multiline.timeout: 5s
-#--------------------------------------------------------------------------
-  - type: log
-    fields_under_root: true
-    fields:
-      type: dev-https-weblog
-    encoding: utf-8
-    ignore_older: 240h  #need for update
-    scan_frequency: 5s
-    clean_inactive: 480h  #need for update
-    clean_removed: true
-    paths:
-      - /logs/weblog/ssl_dev.reach.access.*.log
-#--------------------------------------------------------------------------
-  - type: log
-    fields_under_root: true
-    fields:
-      type: dev-http-weblog
-    encoding: utf-8
-    ignore_older: 240h  #need for update
-    scan_frequency: 5s
-    clean_inactive: 480h  #need for update
-    clean_removed: true
-    paths:
-      - /logs/weblog/dev.reach.access.*.log
-#--------------------------------------------------------------------------
-
-
-##########################
-### Modules & Kibana
-##########################
-
-filebeat.config.modules:
-  path: ${path.config}/modules.d/*.yml
-  reload.enabled: false
-
-setup.template.settings:
-  index.number_of_shards: 3
-  
-setup.kibana:
-
-
-##########################
-### OUTPUT SECTION
-##########################
-
-output.logstash:
-  hosts:
-  - 10.10.62.103:5555
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-
 ######################
-#filebeat modules
+#인덱스 삭제 스케쥴(1번서버)
 ######################
 
-#filebeat.yml 기본 설정 안에 "filebeat.config.modules:" 설정을 빼도 되지만 이 경우 "filebeat modules" 명령어 오류 발생함
-#쓰지 않을 것이면 빼도 되나 나중에 사용할 수 있으니 넣어둔다.
+1.crontab 등록 (root)
 
-#filebeat에는 여러 모듈이 있음
-cd /etc/filebeat/modules.d
-filebeat modules list
+crontab -e
+============================================================================================
+###ElasticSearch Log Purge
+55 23 * * * /root/mycront/delete-es-index.sh
+============================================================================================
 
-#이 중에서 apache2 모듈을 활성화 시킴
-filebeat modules enable apache2
-filebeat modules list
+2. 데이터삭제 스크립트
 
-#비활성화
-filebeat modules disable apache2
+vi /root/mycron/delete-es-index.sh
+==============================================================================================================================
+#!/bin/sh
 
+#개발서버 삭제 날짜 정의(기본 4주)
+DeleteDevApi=$(date -d '4 week ago' +"%Y.%m.%d")
+DeleteDevHttps=$(date -d '4 week ago' +"%Y.%m.%d")
+DeleteDevHttp=$(date -d '4 week ago' +"%Y.%m.%d")
 
+#운영서버 삭제 날짜 정의(기본 4주)
+DeletePrdApi=$(date -d '4 week ago' +"%Y.%m.%d")
+DeletePrdHttps=$(date -d '4 week ago' +"%Y.%m.%d")
+DeletePrdHttp=$(date -d '4 week ago' +"%Y.%m.%d")
+
+#개발서버 오래된 로그(인덱스) 삭제
+curl -XDELETE http://localhost:9200/logstash-dev-api-$DeleteDevApi
+curl -XDELETE http://localhost:9200/logstash-dev-https-$DeleteDevHttps
+curl -XDELETE http://localhost:9200/logstash-dev-http-$DeleteDevHttp
+
+#운영서버 오래된 로그(인덱스) 삭제 
+curl -XDELETE http://localhost:9200/logstash-prd-api-$DeletePrdApi
+curl -XDELETE http://localhost:9200/logstash-prd-https-$DeletePrdHttps
+curl -XDELETE http://localhost:9200/logstash-prd-http-$DeletePrdHttp
+
+#logstash history 삭제
+curl -XDELETE http://localhost:9200/logstash-20*
+
+#쉘실행 날짜 기록
+echo RUN at `date` >> /root/mycron/delete-es-index.log
+==============================================================================================================================
 
 
 ######################
@@ -649,7 +390,6 @@ cat  /var/lib/filebeat/registry
 systemctl stop logstash
 
 3. 오브젝트 삭제
-curl -XDELETE http://localhost:9200/filebeat-*
 curl -XDELETE http://localhost:9200/logstash-*
 curl -XDELETE http://localhost:9200/.mon*
 
@@ -664,8 +404,6 @@ tail -f /var/log/logstash/logstash-plain.log
 6.filebeat 로그 전송 초기화 및 실행
 echo "[]" > /var/lib/filebeat/registry
 cat  /var/lib/filebeat/registry
-
-
 
 service filebeat start
 service filebeat status
