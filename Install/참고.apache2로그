@@ -1,5 +1,16 @@
 
+웹로그 바이츠를 정수로 변환 검토할 것
 
+         mutate 
+         {
+            convert => { "ErrorCount" => "integer" }
+            convert => { "WarningCount" => "integer" }
+            convert => { "ExceptionCount" => "integer" }
+            convert => { "Duration" => "float" }
+         }
+         
+         
+=========================================================
 
 input {
   beats {
