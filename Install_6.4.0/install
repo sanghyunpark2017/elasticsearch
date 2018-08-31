@@ -4,6 +4,7 @@
 systemctl stop firewalld
 systemctl disable firewalld
 
+vi /etc/fstab
 
 yum install -y wget curl
 cd /opt/
@@ -69,22 +70,6 @@ clear
 cat /etc/elasticsearch/elasticsearch.yml
 
 
-
-
-
-#새로만든다
-cat << EOF > /etc/elasticsearch/elasticsearch.yml
-cluster.name: hmp-security-logs
-node.name: ${HOSTNAME}
-network.host: 0.0.0.0
-path.data: /app/elasticsearch/data
-path.logs: /app/elasticsearch/log
-discovery.zen.ping.unicast.hosts: ["10.10.64.64:9300", "10.10.64.65:9300",  "10.10.64.66:9300"]
-EOF
-clear
-cat /etc/elasticsearch/elasticsearch.yml
-
-
 #디렉토리생성
 mkdir -p /app/elasticsearch/data
 mkdir -p /app/elasticsearch/log
@@ -105,38 +90,6 @@ curl localhost:9200
 
 #패러미터 조정
 블라블라
-
-##############################
-# X-pack
-##############################
-
-#모든서버
-cat << EOF >> /etc/elasticsearch/elasticsearch.yml
-xpack.license.self_generated.type: trial
-xpack.monitoring.enabled: true
-# enable Security
-xpack.security.enabled: true
-xpack.watcher.enabled: false
-xpack.ml.enabled: false
-EOF
-clear
-cat /etc/elasticsearch/elasticsearch.yml
-
-systemctl stop elasticsearch.service
-systemctl stop elasticsearch.service
-systemctl stop elasticsearch.service
-
-systemctl start elasticsearch.service
-systemctl status elasticsearch.service
-
-cd /usr/share/elasticsearch/bin
-./elasticsearch-setup-passwords interactive
-
-
-
-
-
-
 
 
 ##############################
