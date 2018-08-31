@@ -39,6 +39,98 @@ sudo journalctl --unit elasticsearch
 
 curl localhost:9200
 
+#설정은 기존파일을 백업하고
+cd /etc/elasticsearch
+bk elasticsearch.yml
+
+#새로만든다
+cat << EOF > /etc/elasticsearch/elasticsearch.yml
+cluster.name: hmp-security-logs
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+#http.cors.enabled: true
+#http.cors.allow-origin: "*"
+#http.cors.allow-headers: Authorization       #for head & XPACK
+transport.tcp.port: 9300 
+node.master: true
+node.data: true
+node.ingest: true
+path.data: /app/elasticsearch/data
+path.logs: /app/elasticsearch/log
+#index.number_of_shards: 5
+#index.number_of_replicas: 1
+discovery.zen.ping_timeout: 10s
+discovery.zen.ping.unicast.hosts: ["10.10.64.64:9300", "10.10.64.65:9300",  "10.10.64.66:9300"]
+#discovery.zen.minimum_master_nodes: 3  #for 5 nodes 
+discovery.zen.minimum_master_nodes: 2  #for 3 nodes 
+#action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
+EOF
+clear
+cat /etc/elasticsearch/elasticsearch.yml
+
+
+
+
+
+#새로만든다
+cat << EOF > /etc/elasticsearch/elasticsearch.yml
+cluster.name: hmp-security-logs
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+path.data: /app/elasticsearch/data
+path.logs: /app/elasticsearch/log
+discovery.zen.ping.unicast.hosts: ["10.10.64.64:9300", "10.10.64.65:9300",  "10.10.64.66:9300"]
+EOF
+clear
+cat /etc/elasticsearch/elasticsearch.yml
+
+
+#디렉토리생성
+mkdir -p /app/elasticsearch/data
+mkdir -p /app/elasticsearch/log
+chown elasticsearch:elasticsearch -R /app/elasticsearch
+
+systemctl stop elasticsearch.service
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+
+
+
+
+#클러스터 구성 확인
+-크롬 헤드에서 확인
+
+curl localhost:9200
+
+
+#패러미터 조정
+블라블라
+
+##############################
+# X-pack
+##############################
+
+#모든서버
+cat << EOF >> /etc/elasticsearch/elasticsearch.yml
+xpack.license.self_generated.type: trial
+xpack.monitoring.enabled: true
+# enable Security
+xpack.security.enabled: true
+xpack.watcher.enabled: false
+xpack.ml.enabled: false
+EOF
+clear
+cat /etc/elasticsearch/elasticsearch.yml
+
+systemctl stop elasticsearch.service
+systemctl stop elasticsearch.service
+systemctl stop elasticsearch.service
+
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+
+cd /usr/share/elasticsearch/bin
+./elasticsearch-setup-passwords interactive
 
 
 
@@ -47,6 +139,20 @@ curl localhost:9200
 
 
 
+##############################
+# Install Kibana(Master1)
+##############################
+cd ~
+
+
+
+sftp -P 2189 DCinfra@10.10.38.240
+
+
+wget https://artifacts.elastic.co/downloads/kibana/kibana-6.4.0-x86_64.rpm
+shasum -a 512 kibana-6.4.0-x86_64.rpm 
+rpm --install kibana-6.4.0-x86_64.rpm
+`
 
 
 
