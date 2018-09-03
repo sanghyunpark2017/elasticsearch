@@ -3,7 +3,8 @@
 # 이슈노트
 #################
 웹로그 월변경 될 떄 9시간 이전의 데이터를 가지고 kibana에서 discover되지 않음 9시 경과 후에는 실시간 로그 보여짐
--> 기존 @timestamp를 UTC(GMT +9)로 전환해서 그런듯하며 자세한 것은 추후 조치
+-> 기존 @timestamp를 UTC(GMT +9)로 전환해서 그런듯
+-> 이때 raw데이터를 보려면 임시로 @timestamp 없이 index 생성하여, discover 함
 
 
 
