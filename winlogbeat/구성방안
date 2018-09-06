@@ -7,6 +7,15 @@
 #logstash가 중간에서 필터링 할 것 해준다
 -로그인이벤트 4624 중에서도 특정 logon type만 처리함
 
+만약, winlogbeat에서 대량의 로그를 보내게되고, logstash에서 대부분을 drop하게 되는 조건이라면
+winlogbeat에서 필터링하는 것도 고려한다
+
+요점은 필터링을 어디에서 할 거냐
+
+첫째, winlogbeat -- logstash(필터링) -- elsaticsearch
+
+둘째, winlogbeat(필터링) -- elasticsearch 또는
+     winlogbeat(필터링) -- logstash -- elasticsaerch
 
 
 
