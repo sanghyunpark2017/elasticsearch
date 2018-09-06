@@ -1,4 +1,8 @@
 
+#윈도우로그온 관련해서는 홈페이지에서 가이드함
+https://www.elastic.co/blog/monitoring-windows-logons-with-winlogbeat
+
+
 
 #winlogbeat는 정의된 이벤트ID로만 전송한다.
 -단순한 조건으로만 동작하게 하여 리소스 사용량 최소화
