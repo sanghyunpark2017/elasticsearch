@@ -21,6 +21,30 @@ winlogbeat에서 필터링하는 것도 고려한다
 
 ------------------------------------------------------------------------------------------------
 
+#winlogbeat 
+
+processors:
+- drop_event:
+    when.or:
+      # This filters logons from managed service accounts.
+      # The trailing dollar sign is reserved for managed service accounts.
+      - regexp.event_data.TargetUserName: '.*\$'
+
+      # This filters logon type 0 which is used for system accounts.
+      - equals.event_data.LogonType: '0'
+
+      # This filters logon type 5 which is used for service accounts.
+      - equals.event_data.LogonType: '5'
+
+      # This filters anonymous logons which are typically benign.
+      # Anonymous users have extremely limited privileges.
+      - equals.event_data.TargetUserName: 'ANONYMOUS LOGON'
+      
+
+
+
+
+
 
 
 
