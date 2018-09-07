@@ -1,7 +1,73 @@
 
-#윈도우로그온 관련해서는 홈페이지에서 가이드함
+#윈도우로그온 관련해서는 홈페이지에서 가이드하고 있음
 https://www.elastic.co/blog/monitoring-windows-logons-with-winlogbeat
 
+
+첫째, 로그온이벤트(4624) 처리
+로그온유형(콘솔,IIS,원격터미널 등)이 무엇이든 간에 성공적으로 로그온했을 떄 발생함
+특정 로그온유형(콘솔만)만 필터링 하려고 한다면 필터링(drop만 됨)을 걸어야 함
+
+둘째, 로그오프이벤트(4625) 처리
+위와 동일
+
+셋째, 원격로그인 IP주소 비쥬얼화 (logstash필요)
+1) winlogbeat의 output을 logstash로 해준다.
+2) )logstash는 이벤트데이터 중에서 IpAddress 항목을 빼내서 geoip라는 이름의 필드로 넣어주고 elasticsearch로 전송한다.
+
+input {
+  beats {
+    port => 5044
+  }
+}
+
+filter {
+  geoip {
+    source => "[event_data][IpAddress]"
+  }
+}
+
+output {
+  elasticsearch {
+    hosts => "logstash.elastic.local:9200"
+    manage_template => false
+    index => "%{[@metadata][beat]}-%{+YYYY.MM.dd}"
+    document_type => "%{[@metadata][type]}"
+  }
+}
+
+3) elasticsearch는 템플릿에서 geoip라는 필드를 geo type으로 선언해준다.
+
+PUT _template/winlogbeat_1
+{
+  "order": 1,
+  "template": "winlogbeat-*",
+  "mappings": {
+    "_default_": {
+      "properties": {
+        "geoip"  : {
+          "dynamic": true,
+          "properties" : {
+            "ip": { "type": "ip" },
+            "location" : { "type" : "geo_point" },
+            "latitude" : { "type" : "float" },
+            "longitude" : { "type" : "float" }
+          }
+        }
+      }
+    }
+  }
+}
+
+이하 자세한 것은 홈페이지 참조
+https://www.elastic.co/blog/monitoring-windows-logons-with-winlogbeat
+
+
+
+
+
+
+
+------------------------- OLD -----------------------------
 
 
 #winlogbeat는 정의된 이벤트ID로만 전송한다.
