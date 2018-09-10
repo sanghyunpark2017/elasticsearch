@@ -295,34 +295,6 @@ sudo firewall-cmd --permanent --zone=public --add-port=5555/tcp
 sudo firewall-cmd --reload
 
 
-
-################################
-# Winlogbeat설정
-################################
-#보안로그 이벤트ID 4624(로그온) 중에서도 로그온타임이 X 인것
-event_id:4624
-event_data.LogonType
-
-
-C:\Program Files\Winlogbeat\winlogbeat.yaml
-----------------------------------------------------------------------------------
-winlogbeat.event_logs:
-  - name: Security
-    ignore_older: 1m
-    event_id: 4624
-
-output.logstash:
-  hosts: ["10.10.64.99:5555"]
-
-setup.kibana:
-  host: "10.10.64.91:5601"
-
-logging.to_files: true
-logging.files:
-  path: C:\ProgramData\winlogbeat\Logs
-logging.leve: error
-----------------------------------------------------------------------------------
-
 #그럼 security-logs-로 시작하는 인덱스에 로그들이 쌓임
 #로그온 유형은 IIS로그인 유형(8)을 제외한 것만 쌓이도록 함
 
@@ -357,6 +329,40 @@ logging.leve: error
 10 : 원격터미널
 (제외)11 : 캐시된 로그인
 
+
+
+
+######################################
+2018/09/11일자 winlogbeat 설정
+######################################
+#output은 elk가 아닌 logstash로 변경
+#로그인이벤트만 가져오고, winlogbeat에서 로그온유형을 필터링함
+
+winlogbeat.event_logs:
+  - name: Security
+    ignore_older: 1m  
+    event_id: 4624
+
+processors:
+- drop_event:
+    when.or:
+      - equals.event_data.LogonType: '4'
+      - equals.event_data.LogonType: '5'
+      - equals.event_data.LogonType: '7'
+      - equals.event_data.LogonType: '8'
+      - equals.event_data.LogonType: '9'
+      - equals.event_data.LogonType: '11'
+
+output.logstash:
+  hosts: ["10.10.64.99:5555"]
+
+setup.kibana:
+  host: "10.10.64.91:5601"
+
+logging.to_files: true
+logging.files:
+  path: C:/ProgramData/winlogbeat/Logs
+logging.level: error
 
 
 
