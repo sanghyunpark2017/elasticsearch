@@ -1,32 +1,105 @@
 
+#2018년 9월 10일 작성함
+#logstash 6.4.0이고, java "1.8.0_65"에 최적
 
-docker pull logstash
+################################
+# 도커이미지
+################################
 
-docker run -dit -e TZ=Asia/Seoul --name "logstash-security" logstash
+1) (X) elasticsearch 홈페이지 가이드에 따라 이미지 사용
+>>Centos7이고, logstash 계정으로 구동됨(툴 등은 설치 불가)
+>>30일간만 사용 할 수 있음
+>>6.4.0 최신버전 사용가능
+
+2) (X) Ofiicial logstash이미지
+>>우부트OS에 5.6.X 오래된 버전
+
+3) (O) 자체 제작하여 사용하자
+
+
+################################
+# 자체OS로 부터 LOGSTASH 설치
+################################
+#기본 CMD가 /bin/sh이므로 kube에서 기동해야 됨
+#root계정으로 구동하게 됨 
+
+
+docker run -dit --name "logstash-security" reg.hmp.com:443/mycentos7beta:1
 docker ps
 
 docker exec -it logstash-security /bin/bash
-date
 
-apt update
+###########################
+# JAVA 설치(root계정)
+###########################
 
-apt-get install -y net-tools procps vim
+yum install -y java-1.8.0-openjdk
 
-cat << EOF >> /root/.bashrc
-export PS1="\[\e[36;1m\]\u@\[\e[32;1m\]\h:\[\e[31;1m\]\w# \[\e[0m\]"
-alias ll='ls -al'
-EOF
+/usr/bin/java -version
+
+vi /root/.bashrc
+------------------------------------------------------------------
+###JAVA
+export JAVA_HOME=/usr/bin/java
+export PATH=$PATH:$JAVA_HOME/bin/
+export CLASSPATH=$CLASSPATH:$JAVA_HOME/lib/tools.jar
+------------------------------------------------------------------
+
 exit
+
+docker exec -it logstash-security /bin/bash
+java -version
+echo $JAVA_HOME
+
+###########################
+# logstash 설치(root계정)
+###########################
+
+
+
+
+
+
+
+
+docker pull docker.elastic.co/logstash/logstash:6.4.0
+docker images
+
+
+docker run -dit -e TZ=Asia/Seoul --name "logstash-security" docker.elastic.co/logstash/logstash:6.4.0
+docker ps
+
+docker exec -it logstash-security /bin/bash
+  pwd
+  date
+  grep . /etc/*-release
+  logstash --version
+  exit
 
 
 docker stop logstash-security
 docker start logstash-security
-
 docker exec -it logstash-security /bin/bash
 
-cd /usr/share/logstash/conf
+#기본설정파일 백업
+cd /usr/share/logstash/pipeline
+cp  logstash.conf  logstash.cof.org
 
-tail -f /var/log/logstash/??
+cd /usr/share/logstash/config
+cp jvm.options jvm.options.org
+cp log4j2.properties log4j2.properties.org
+cp logstash-sample.conf logstash-sample.conf.org
+cp logstash.yml logstash.yml.org
+cp pipelines.yml pipelines.yml.org
+cp startup.options startup.options.org
+ls -al
+
+
+
+
+
+##쿠버네티스는 /usr/share/logstash/pipeline/
+볼륨으로 빼야함
 
 
 
