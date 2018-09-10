@@ -8,7 +8,7 @@
 1.rpm버전 설치 시 systemctl stsrt 시 D-Bus 에러 발생
   docker official하게는 5.x 버전까지만 지원하고 이후로는 elastic자체에서 이미지 제공하는 30일만 무료
 2.logstash는 foreground가 아닌 daemon으로 하자 
-
+3.logstash docker와 kube 올리고, service까지 d올리고, winlogbeat에서 haproxy 통해서 등어가는 것이 잘 되지 않음
 
 ################################
 # 도커이미지
@@ -286,14 +286,16 @@ systemctl status haproxy.service
 
 netstat -nlp
 
+sudo firewall-cmd --permanent --zone=public --add-port=5555/tcp
+sudo firewall-cmd --reload
 
 
 
 ################################
 # Winlogbeat설정
 ################################
-#보안로그 이벤트ID 4625(로그온) 중에서도 로그온타임이 X 인것
-event_id:4625
+#보안로그 이벤트ID 4624(로그온) 중에서도 로그온타임이 X 인것
+event_id:4624
 event_data.LogonType
 
 
@@ -302,102 +304,21 @@ C:\Program Files\Winlogbeat\winlogbeat.yaml
 winlogbeat.event_logs:
   - name: Security
     ignore_older: 1m
-    event_id: 4625
+    event_id: 4624
 
 output.logstash:
-  hosts: ["haproxy:????"]
+  hosts: ["10.10.64.99:5555"]
 
-#output.elasticsearch:
-#  hosts: ["10.10.64.91:9200", "10.10.64.92:9200", "10.10.64.93:9200"]
-#  protocal: http
+setup.kibana:
+  host: "10.10.64.91:5601"
+
+logging.to_files: true
+logging.files:
+  path: C:\ProgramData\winlogbeat\Logs
+logging.leve: error
 ----------------------------------------------------------------------------------
 
 
-################################
-# Logstash 설정
-################################
-
-vi logstash.conf
----------------------------------------------------------------------------------------------------------
-input { 
-  beats {
-    port => "5555"
-    #type => "wincli-log"
-    #codec => "json"
-}
-
-filter {  
-}
-
-output {
-  elasticsearch {
-    hosts => ["localhost:9200"]
-    manage_template => false
-    index => "%{[@metadata][beat]}-%{+YYYY.MM.dd}"
-    document_type => "%{[@metadata][type]}"
-  }
-}
----------------------------------------------------------------------------------------------------------
-
-참고사이트:https://www.elastic.co/kr/blog/monitoring-windows-logons-with-winlogbeat
-
-
-
-
-
-logstash -f logstash.conf
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-docker pull docker.elastic.co/logstash/logstash:6.4.0
-docker images
-
-
-docker run -dit -e TZ=Asia/Seoul --name "logstash-security" docker.elastic.co/logstash/logstash:6.4.0
-docker ps
-
-docker exec -it logstash-security /bin/bash
-  pwd
-  date
-  grep . /etc/*-release
-  logstash --version
-  exit
-
-
-docker stop logstash-security
-docker start logstash-security
-docker exec -it logstash-security /bin/bash
-
-#기본설정파일 백업
-cd /usr/share/logstash/pipeline
-cp  logstash.conf  logstash.cof.org
-
-cd /usr/share/logstash/config
-cp jvm.options jvm.options.org
-cp log4j2.properties log4j2.properties.org
-cp logstash-sample.conf logstash-sample.conf.org
-cp logstash.yml logstash.yml.org
-cp pipelines.yml pipelines.yml.org
-cp startup.options startup.options.org
-ls -al
-
-
-
-
-
-##쿠버네티스는 /usr/share/logstash/pipeline/
-볼륨으로 빼야함
 
 
 
