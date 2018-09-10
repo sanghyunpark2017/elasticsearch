@@ -320,7 +320,7 @@ sudo firewall-cmd --reload
 
 [LogonType 유형]
 2 : 대화형 로그인
-3 : 네트워크 로그인
+(제외)3 : 네트워크 로그인(파일공유 액세스)
 (제외)4 : 스케쥴작업 로그인
 (제외)5 : 서비스계정 로그인(시작)
 (제외)7 : 잠금해제(스크린세이버)
@@ -346,6 +346,7 @@ winlogbeat.event_logs:
 processors:
 - drop_event:
     when.or:
+      - equals.event_data.LogonType: '3'
       - equals.event_data.LogonType: '4'
       - equals.event_data.LogonType: '5'
       - equals.event_data.LogonType: '7'
