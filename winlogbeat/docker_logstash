@@ -5,9 +5,10 @@
 ################################
 # 실수노트
 ################################
+1.rpm버전 설치 시 systemctl stsrt 시 D-Bus 에러 발생
+  docker official하게는 5.x 버전까지만 지원하고 이후로는 elastic자체에서 이미지 제공하는 30일만 무료
+2.logstash는 foreground가 아닌 daemon으로 하자 
 
-1.logstash는 foreground가 아닌 daemon으로 하자 (zip x -> rpm)
-2.rpm버전 go
 
 ################################
 # 도커이미지
@@ -44,19 +45,20 @@ yum install -y java-1.8.0-openjdk
 
 /usr/bin/java -version
 
-vi /root/.bashrc
 ------------------------------------------------------------------
+cat << EOF >> /root/.bashrc
 ###JAVA
 export JAVA_HOME=/usr/bin/java
 export PATH=$PATH:$JAVA_HOME/bin/
 export CLASSPATH=$CLASSPATH:$JAVA_HOME/lib/tools.jar
+EOF
 ------------------------------------------------------------------
 
 exit
 
 docker exec -it logstash-security /bin/bash
-java -version
-echo $JAVA_HOME
+  java -version
+  echo $JAVA_HOME
 
 ###########################
 # logstash 설치(root계정)
@@ -81,7 +83,7 @@ cp pipelines.yml pipelines.yml.org
 cp startup.options startup.options.org
 
 
-
+#기본 테스트
 vi /root/logstash.conf
 ---------------------------------------------------------------------------------------------------------
 input { 
@@ -93,8 +95,6 @@ output {
   stdout { codec => rubydebug }
 }
 ---------------------------------------------------------------------------------------------------------
-
-##실행
 /app/logstash-6.4.0/bin/logstash -f /root/logstash.conf
 
 
@@ -105,9 +105,6 @@ output {
 
 cd /app
 rm logstash-6.4.0.zip
-
-exit
-
 
 ################################
 # Logstash 설정
@@ -133,8 +130,6 @@ output {
 }
 ---------------------------------------------------------------------------------------------------------
 
-
-##실행
 /app/logstash-6.4.0/bin/logstash -f /root/logstash.conf
 
 
@@ -146,15 +141,15 @@ output {
 
 docker stop logstash-security
 
-docker ps -a
 
 #베이스 이미지는 원본 보관용으로 만들고, seucrity 용도로 하나 더 만든다
-docker commit CONTAINERID reg.hmp.com:443/mylogstash-640:1 
-docker commit CONTAINERID reg.hmp.com:443/mylogstash-security:1 
+docker ps -a
+docker commit CONTAINERID   reg.hmp.com:443/logstash-640:base
+docker commit CONTAINERID   reg.hmp.com:443/logstash-640-security:1 
 
 docker images
-docker push reg.hmp.com:443/mylogstash-640:1
-docker push reg.hmp.com:443/mylogstash-security:1
+docker push reg.hmp.com:443/logstash-640:base
+docker push reg.hmp.com:443/logstash-640-security:1
 
 curl https://reg.hmp.com/v2/_catalog
 
@@ -167,7 +162,7 @@ curl https://reg.hmp.com/v2/_catalog
 #kubeadm서버로 이동
 
 
-vi /root/logstash-security.yaml
+vi /root/logstash-security-deployment.yaml
 ------------------------------------------------------------------------------------------------------------
 apiVersion: apps/v1
 kind: Deployment
@@ -197,7 +192,7 @@ spec:
     spec:
       containers:
       - name: logstash-security-deployment-pod
-        image: reg.hmp.com/mylogstash-security:1
+        image: reg.hmp.com/logstash-640-security:1
         ports:
         - containerPort: 5555
         resources:
@@ -208,16 +203,64 @@ spec:
         command: ["/app/logstash-6.4.0/bin/logstash", "-f", "/root/logstash.conf"]        
 ------------------------------------------------------------------------------------------------------------
 
-#kubectl delete -f /root/logstash-security.yaml
+kubectl delete -f /root/logstash-security-deployment.yaml
 
-kubectl apply -f /root/logstash-security.yaml
+kubectl apply -f /root/logstash-security-deployment.yaml
 
-
+kubectl get pods
 kubectl logs 
 
 kubectl get pods
-kubectl exec -it 
-/app/logstash-6.4.0/bin/logstash -f /root/logstash.conf
+kubectl exec -it ******** /bi/bash
+  netstat -nlp
+  ps -ef
+  
+
+############
+# 서비스
+############
+
+
+vi /root/logstash-security-deployment.yaml
+-----------------------------------------------------------------------------------------------
+kind: Service
+apiVersion: v1
+metadata:
+  name: logstash-security-svc
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: logstash-security
+    tier: frontend
+    role: making
+    deployment: v1    
+  ports:
+  - name: http
+    protocol: TCP
+    port: 5555
+    nodePort: 31001  
+-----------------------------------------------------------------------------------------------
+
+
+kubectl apply -f /root/logstash-security-deployment.yaml
+
+kubectl get svc
+
+
+############
+# HAPROXY
+############
+
+
+
+
+
+
+
+
+
+
 
 
 
