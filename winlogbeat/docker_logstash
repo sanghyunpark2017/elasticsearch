@@ -1,0 +1,45 @@
+
+
+docker pull logstash
+
+docker -dit --name "logstash-security" logstash
+
+docker exec -it logstash /bin/bash
+
+apt update
+
+apt-get install -y net-tools procps vim
+
+#bk 스크립트
+vi /sbin/bk
+------------------------------------------------------------------
+#CP.ALL.ENABLE
+for i in $*
+do
+        if [ -f $i ]
+        then
+                cp -pf "$1" "$1".`date +"%y%m%d.%H%M%S"`
+        else
+                echo "`basename $0` <filenames>"
+        fi
+done
+------------------------------------------------------------------
+
+cat << EOF >> /root/.bashrc
+export PS1="\[\e[36;1m\]\u@\[\e[32;1m\]\h:\[\e[31;1m\]\w# \[\e[0m\]"
+alias ll='ls -al'
+EOF
+
+
+exit
+
+docker stop logstash-security
+docker start logstash-security
+
+docker exec -it logstash-security /bin/bash
+
+
+
+
+
+
