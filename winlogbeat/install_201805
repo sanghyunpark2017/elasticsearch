@@ -135,3 +135,46 @@ event_data.SubStatus:
 
 
 
+
+
+######################################
+2018/09/11일자 winlogbeat 설정
+######################################
+#output은 elk가 아닌 logstash로 변경
+#로그인이벤트만 가져오고, winlogbeat에서 로그온유형을 필터링함
+
+
+winlogbeat.event_logs:
+  - name: Security
+    ignore_older: 1m  
+    event_id: 4624
+
+processors:
+- drop_event:
+    when.or:
+      - equals.event_data.LogonType: '4'
+      - equals.event_data.LogonType: '5'
+      - equals.event_data.LogonType: '7'
+      - equals.event_data.LogonType: '8'
+      - equals.event_data.LogonType: '9'
+      - equals.event_data.LogonType: '11'
+
+output.logstash:
+  hosts: ["10.10.64.99:5555"]
+
+setup.kibana:
+  host: "10.10.64.91:5601"
+
+logging.to_files: true
+logging.files:
+  path: C:/ProgramData/winlogbeat/Logs
+logging.level: error
+
+
+
+
+
+
+
+
+
