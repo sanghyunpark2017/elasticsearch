@@ -221,10 +221,10 @@ kubectl exec -it ******** /bi/bash
 ############
 
 
-vi /root/logstash-security-deployment.yaml
+vi /root/logstash-security-service.yaml
 -----------------------------------------------------------------------------------------------
-kind: Service
 apiVersion: v1
+kind: Service
 metadata:
   name: logstash-security-svc
   namespace: default
@@ -239,11 +239,11 @@ spec:
   - name: http
     protocol: TCP
     port: 5555
-    nodePort: 31001  
+    nodePort: 32001  
 -----------------------------------------------------------------------------------------------
 
 
-kubectl apply -f /root/logstash-security-deployment.yaml
+kubectl apply -f /root/logstash-security-service.yaml
 
 kubectl get svc
 
@@ -252,20 +252,39 @@ kubectl get svc
 # HAPROXY
 ############
 
+#기존 설정 맨뒤에 추가
 
+cd /etc/haproxy
+bk haproxy.cfg
 
+vi /etc/haproxy/haproxy.cfg
+-----------------------------------------------------------------------------------------------
+##############################
+# logstash-security
+##############################
 
+frontend logstash-security
+  bind *:5555
+  mode tcp
+  option tcplog
+  default_backend logstash-security
+  
+backend logstash-security  
+  mode tcp
+  option tcplog
+  option tcp-check
+  balance roundrobin
+  default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+  server t1vkubework1 10.10.64.64:32001 check fall 3 rise 2
+  server t1vkubework2 10.10.64.65:32001 check fall 3 rise 2
+  server t1vkubework3 10.10.64.66:32001 check fall 3 rise 2
+-----------------------------------------------------------------------------------------------
 
+systemctl enable haproxy.service
+systemctl restart haproxy.service
+systemctl status haproxy.service
 
-
-
-
-
-
-
-
-
-
+netstat -nlp
 
 
 
