@@ -110,6 +110,7 @@ rm logstash-6.4.0.zip
 ################################
 # Logstash 설정
 ################################
+#인덱스 이름은 winlogbeat-* 으로 함 (winlogbeat.exe가 지원하는 대시보드의 기본 인덱스명임)
 #인덱스 뒤에 날짜 붙일 때,,, 처리시간이 아닌 데이터 안의 날짜로 해볼 것
 #stdout은 나중에 뺌
 
@@ -130,7 +131,7 @@ filter {
 output {
   elasticsearch { 
     hosts => ["10.10.64.91:9200", "10.10.64.92:9200", "10.10.64.93:9200"]
-    index => "security-logs-%{+yyyy-MM-dd}"
+    index => "winlogbeat-%{+yyyy-MM-dd}"
   }
 #  stdout { codec => rubydebug }
 }
