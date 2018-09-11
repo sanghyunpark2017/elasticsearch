@@ -206,8 +206,22 @@ spec:
             memory: "2Gi"
           requests:
             memory: "1Gi"
-        command: ["/app/logstash-6.4.0/bin/logstash", "-f", "/root/logstash.conf"]        
+        command: ["/app/logstash-6.4.0/bin/logstash", "-f", "/root/logstash.conf"]
+        volumeMounts:
+        - mountPath: /app/logstash-6.4.0/config/logstash.conf
+          name: name1
+      volumes:
+      - name: name1
+        hostPath:
+          path: /vol/private/logstash-security-deployment/app/logstash-6.4.0/config/logstash.conf
+          type: File
 ------------------------------------------------------------------------------------------------------------
+
+mkdir -p /vol/private/logstash-security-deployment/app/logstash-6.4.0/config
+cd /vol/private/logstash-security-deployment/app/logstash-6.4.0/config
+
+#logstash.conf 파일 붙여넣기
+
 
 kubectl delete -f /root/logstash-security-deployment.yaml
 
