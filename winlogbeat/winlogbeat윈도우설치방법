@@ -1,5 +1,16 @@
 
 #######################
+# 노트
+#######################
+
+#윈도우2003은 EVENT_ID를 지원하지 않음
+#따라서 필드구조가 다르기 때문에 별도에 인덱스를 사용해야 하고,
+ 이는 인덱스가 윈도우2003용과 윈도우2008 이상 용으로 구분되어야 함
+#logstash 2대가 필요함
+
+
+
+#######################
 # 설치 가이드
 #######################
 
@@ -45,9 +56,52 @@ c:\programdata\winlogbeat\logs
 # 윈도우2003(32bit)
 #######################
 
-1) .NET Framework 2.0 SP1 인스톨
+1) .NET Framework 2.0 SP1 인스톨 (재부팅)
 
-2) 파워쉘 2.0 인스톨
+2) 파워쉘 2.0 인스톨 (재부팅 없음)
+
+3) Program Files 폴더 밑에 "Winlogbeat2003" 폴더 가져다 놓고 
+
+3) 시작>프로그램>보조프로그램>Windows PowerShell>Windows PowerShell 실행
+
+cd "C:\Program Files\Winlogbeat2003"
+
+cd "C:\Program Files\Winlogbeat"
+PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.ps1
+
+
+cd "C:\Program Files\Winlogbeat2003"
+PowerShell.exe -ExecutionPolicy UnRestricted -File .\uninstall-service-winlogbeat.ps1
+
+#윈도우2003은 Event_ID를 지원하지 않음
+https://www.elastic.co/guide/en/beats/winlogbeat/master/configuration-winlogbeat-options.html#_literal_event_logs_event_id_literal
+
+event_logs.event_id
+This option is only available on operating systems supporting the Windows Event Log API
+(Microsoft Windows Vista and newer).
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
