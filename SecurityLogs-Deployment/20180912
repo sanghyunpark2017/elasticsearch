@@ -4,6 +4,9 @@
 ###############
 -kubernetes, private registry, docker build-server, nfs, haproxy
 -elasticsearch 3node
+-윈도우2008 이상 winlogbeat
+-윈도우2003 이하 winlogbeat
+
 
 
 #kubernetes가 사용할 logstash.conf 파일을 만든다
