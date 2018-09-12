@@ -10,57 +10,53 @@
 
 
 
-#######################
-# 설치 가이드
-#######################
+##############################
+# 윈도우2008이상 설치 가이드
+##############################
 
+1) winlogbeat.zip 파일 다운로드 
+-https://www.elastic.co/downloads/beats/winlogbeat
+-Windows 32bit, 64bit 2가지 버전이 있으며, 윈도우2003/2008이상 동일한 설치파일을 사용함
 
-1) 사전작업(대표서버 1대)
--다운로드 : https://www.elastic.co/downloads/beats/winlogbeat
--Windows 32bit, 64bit 택 1
+2) winlogbeat.zip 파일을 "Program Files" 폴더 밑 "Winlogbeat" 폴더에 압축해제
 
-3) winlogbeat.yml 파일 설정변경https://github.com/sanghyunpark2017/ElasticSearch/tree/master/winlogbeat
->대표서버에서 압축풀고 설정 후 파일복사로 배포함
+3) winlogbeat.yml 설정변경
 C:\Program Files\Winlogbeat\winlogbeat.yml
+--------------------------------------------------------------------------------------------
 
+--------------------------------------------------------------------------------------------
 
-4) 파워쉘시작 (마우스 오른쪽 클릭 -> Administrator 권한으로 실행)
-윈도우2008 : 시작 -> 관리도구 -> Windows PowerShell Modules
-윈도우2012 : 시작 -> Windows PowerShell
+4) 파워쉘 실행 (마우스 오른쪽 클릭 -> Administrator 권한으로 실행)
+-윈도우2008 : 시작 -> 관리도구 -> Windows PowerShell Modules
+-윈도우2012 : 시작 -> Windows PowerShell
 
-
-5) 설치
-에서 install(무중단)
->윈도우2008 이상은 파워쉘이 내장되어 있어 그냥 사용
->윈도우2003은 파워쉘 설치 및 재부팅하여 파워쉘 적용해야함
-
-#PS콘솔에서 명령어 실행
+5) 파워쉘 안에서 설치명령어 실행하여 서비스 등록
 cd "C:\Program Files\Winlogbeat"
 .\install-service-winlogbeat.ps1
 
-
+#삭제
 .\uninstall-service-winlogbeat.ps1
 
-
-
-
-5) 윈도우 서비스 등록 확인
->서비스명 "winlogbeat"
-
-6) 서비스 시작
+6) 서비스명 winlogbeat 시작
 
 7) 로그확인
 c:\programdata\winlogbeat\logs
 
-#######################
-# 윈도우2003(32bit)
-#######################
 
-1) .NET Framework 2.0 SP1 인스톨 (재부팅)
+##############################
+# 윈도우2003이하 설치 가이드
+##############################
 
-2) 파워쉘 2.0 인스톨 (재부팅 없음)
+1) .NET Framework 2.0 SP1 설치 후 재부팅
+-영문버전(32bit) : http://10.10.63.63:8089/NetFx20SP1_x86_ENG.exe
+-한글버전(32bit) : http://10.10.63.63:8089/NetFx20SP1_x86.exe
+-한글버전(64bit) : http://10.10.63.63:8089/NetFx20SP1_x64.exe
 
-3) Program Files 폴더 밑에 "Winlogbeat2003" 폴더 가져다 놓고 
+2) 파워쉘 2.0 인스톨(재부팅 없음)
+-영문버전 : http://10.10.63.63:8089/WindowsServer2003-PowerShell-2.0-ENG.exe
+-한글버전 : http://10.10.63.63:8089/WindowsServer2003-PowerShell-2.0-KOR.exe
+
+3) winlogbeat.zip 파일을 "Program Files" 폴더 밑 "Winlogbeat" 폴더에 압축해제
 
 3) 시작>프로그램>보조프로그램>Windows PowerShell>Windows PowerShell 실행
 
