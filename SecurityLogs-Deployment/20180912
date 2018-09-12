@@ -1,6 +1,16 @@
 
 ###############
-# 준비물
+# NOTE
+###############
+-윈도우2008 이상에서는 winlogbeat에서 이벤트로그 필터링하고
+-윈도우2003 이하는 Event_id를 지원하지 않기에 winlogbeat가 전체 보안로그를 전송하고, logstash에서 이벤트로그 필터링 한다.
+-윈도우2008은 로그온 이벤트 중 특정 LogonType 만 수집하는데, 윈도우2003은 ... 로그온(528) 일 떄 event_data.param4 필드가 LogonType임
+-(참고)로그온이벤트의 하부 로그온타임은 문서 하단 참조
+
+
+
+###############
+# 서버들
 ###############
 -kubernetes, private registry, docker build-server, nfs, haproxy
 -elasticsearch 3node
@@ -45,6 +55,9 @@ cat /vol/private/logstash-security-2008-deployment/app/logstash-6.4.0/config/log
 
 
 #윈도우2003용 logstash 설정
+-로그온(528) : 로컬컴퓨터에 계정로그인 시 발생, 네트웍로그온(540)에 제외
+-로그오프(538) : 모든 유형의 로그오프 시 발생. 콘솔, 터미널, 대화형 등
+
 ------------------------------------------------------------------------------------------------------------------------------------------
 cat << EOF > /vol/private/logstash-security-2003-deployment/app/logstash-6.4.0/config/logstash.conf
 input {
@@ -54,6 +67,13 @@ input {
 }
 
 filter {
+  if [event_id] != 528 and [event_id] != 538 {
+    drop {}
+  }
+  
+  if [event_data.param4] != 2 and [event_data.param4] != 10 {
+    drop {}
+  } 
 }
 
 output {
@@ -259,9 +279,7 @@ bk /etc/haproxy/haproxy.cfg
 
 vi  /etc/haproxy/haproxy.cfg
 -------------------------------------------------------------------------------------------------------------------------
-##############################
-# logstash-security-2008-service
-##############################
+##3 logstash-security-2008-service
 
 frontend logstash-security-2008-service
   bind *:5555
@@ -280,9 +298,7 @@ backend logstash-security-2008-service
   server t1vkubework3 10.10.64.66:32001 check fall 3 rise 2
 
 
-##############################
-# logstash-security-2003-service
-##############################
+### logstash-security-2003-service
 
 frontend logstash-security-2003-service
   bind *:5556
@@ -325,8 +341,62 @@ security-2003-*
 
 
 
+######################################
+윈도우서버2008이상/winlogbeat 설정
+######################################
+#로그인이벤트만 가져오고, winlogbeat에서 로그온유형 2와 10만 허용하게끔 필터링함
+#로그온(4624), 로그오프(4634)
+
+winlogbeat.event_logs:
+  - name: Security
+    ignore_older: 1m  
+    event_id: 4624, 4634
+
+processors:
+- drop_event:
+    when.or:
+      - equals.event_data.LogonType: '3'
+      - equals.event_data.LogonType: '4'
+      - equals.event_data.LogonType: '5'
+      - equals.event_data.LogonType: '7'
+      - equals.event_data.LogonType: '8'
+      - equals.event_data.LogonType: '9'
+      - equals.event_data.LogonType: '11'
+
+output.logstash:
+  hosts: ["10.10.64.99:5555"]
+
+setup.kibana:
+  host: "10.10.64.91:5601"
+
+logging.to_files: true
+logging.files:
+  path: C:/ProgramData/winlogbeat/Logs
+logging.level: error
 
 
+
+#######################
+# 참조
+#######################
+
+#로그온이벤트(4624)에 포함된 Logon Type으로 2와 10만 허용함
+2 : Interactive
+    (logon at keyboard and screen of system) Windows 2000 records Terminal Services logon as this type rather than Type 10.
+3 : Network 
+    (i.e. connection to shared folder on this computer from elsewhere on network or IIS logon - 
+    Never logged by 528 on W2k and forward. See event 540)
+    >>콘솔 또는 원격터미널 로그인
+4 : Batch (i.e. scheduled task)
+5 : Service (Service startup)
+7 : Unlock (i.e. unnattended workstation with password protected screen saver)
+8 : NetworkCleartext 
+    (Logon with credentials sent in the clear text. Most often indicates a logon to IIS with "basic authentication")
+    >>IIS 로그인
+    
+9 : NewCredentials
+10 : RemoteInteractive (Terminal Services, Remote Desktop or Remote Assistance)
+11 : CachedInteractive (logon with cached domain credentials such as when logging on to a laptop when away from the network)
 
 
 
