@@ -401,6 +401,63 @@ logging.files:
 logging.level: error
 
 
+#####################################################################
+# How to Secure Kibana using Nginx as a reverse proxy on CentOS 7
+#####################################################################
+https://www.hugeserver.com/kb/how-secure-kibana-nginx-centos/
+
+yum install -y epel-release
+yum install -y nginx
+
+systemctl start nginx
+systemctl enable nginx
+
+yum install -y httpd-tools
+
+htpasswd -c /etc/nginx/ hmplogadm
+
+cat /etc/nginx/.htpasswd
+
+vi /etc/nginx/nginx.conf
+-----------------------------------------------------------------
+server {
+  listen *:80;
+  server_name _;
+  location / {
+    proxy_pass http://10.10.64.91:5601;
+    auth_basic "Restricted";
+    auth_basic_user_file /etc/nginx/.htpasswd;
+  }
+}
+-----------------------------------------------------------------
+
+#Check if everything Ok with your configuration:
+nginx -t
+
+#You should get the following output:
+# nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
+nginx: configuration file /etc/nginx/nginx.conf test is successful
+
+
+systemctl restart nginx
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 #######################
