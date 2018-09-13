@@ -384,6 +384,25 @@ logging.level: error
 
 
 
+######################################
+윈도우서버2003이하/winlogbeat 설정
+######################################
+
+winlogbeat.event_logs:
+  - name: Security
+    ignore_older: 1m  
+
+output.logstash:
+  hosts: ["10.10.64.99:5555"]
+
+logging.to_files: true
+logging.files:
+  path: C:/ProgramData/winlogbeat/Logs
+logging.level: error
+
+
+
+
 #######################
 # 참조
 #######################
