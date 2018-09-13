@@ -1,5 +1,16 @@
 
 ###############
+# 오류노트
+###############
+-logstash 재기동 목적으로 다시 deployment 후에는 pod log 확인하여 정상 기동로그 확인 할 것 -> 가끔 기동 오류 나오면, 이때는 재 배포 후 정상
+-logstash filter 할 때 숫자와 문자("") 확인하여 제대로 표시할 것
+-logstash filter는 문법은 참고하여 사용함
+https://www.elastic.co/guide/en/logstash/current/event-dependent-configuration.html#conditionals
+-윈도우2003에 로그온유형은 event_data.param4 필드이나 logstash filter에서 동작하지 않음
+
+
+
+###############
 # NOTE
 ###############
 -윈도우2008 이상에서는 winlogbeat에서 이벤트로그 필터링하고
@@ -70,10 +81,7 @@ filter {
   if [event_id] != 528 and [event_id] != 538 {
     drop {}
   }
-  
-  if [event_data.param4] != 2 and [event_data.param4] != 10 {
-    drop {}
-  } 
+
 }
 
 output {
