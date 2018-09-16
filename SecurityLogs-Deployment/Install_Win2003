@@ -1,1 +1,32 @@
-#
+
+############
+# 주의사항
+############
+-파워쉘 2.0이 없디면 닷넷프레임웍 2.0 SP1을 설치하고 재부팅 후에 파워쉘 2.0 설치함
+-윈도우2003버전은 한글/영문, 32bit/64bit 확인 후 설치할 것
+
+1) .NET Framework 2.0 SP1 설치 후 재부팅
+-영문버전(32bit) : http://10.10.63.63:8089/NetFx20SP1_x86_ENG.exe
+-한글버전(32bit) : http://10.10.63.63:8089/NetFx20SP1_x86.exe
+-한글버전(64bit) : http://10.10.63.63:8089/NetFx20SP1_x64.exe
+
+2) 파워쉘 2.0 인스톨(재부팅 없음)
+-영문버전 : http://10.10.63.63:8089/WindowsServer2003-PowerShell-2.0-ENG.exe
+-한글버전 : http://10.10.63.63:8089/WindowsServer2003-PowerShell-2.0-KOR.exe
+
+3) 윈도우2003용 winlogbeat폴더 복사 
+C:\Windows\Program Files\winlogbeat
+
+4) 시작>프로그램>보조프로그램>Windows PowerShell>Windows PowerShell 실행
+
+cd "C:\Program Files\Winlogbeat"
+PowerShell.exe -ExecutionPolicy UnRestricted -File .\install-service-winlogbeat.ps1
+
+5) 서비스 "winlogbeat" 실행
+
+6) 로그확인
+c:\programdata\winlogbeat\logs
+
+(note) 제거
+cd "C:\Program Files\Winlogbeat"
+.\uninstall-service-winlogbeat.ps1
