@@ -1,4 +1,38 @@
-# 
 
-#
-#
+#다운로드 및 설치
+cd ~
+curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.4.0-x86_64.rpm
+sudo rpm -vi filebeat-6.4.0-x86_64.rpm
+
+#설치파일 제거
+rm filebeat-6.4.0-x86_64.rpm
+
+
+#설정파일 백업
+cd /etc/filebeat
+cp filebeat.yml filebeat.yml.org
+
+
+-----------------------------------------------------------------------------------
+filebeat.inputs:
+- type: log
+  enabled: false
+  paths:
+    - /var/log/*.log
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+
+setup.kibana:
+
+output.elasticsearch:
+  hosts: ["localhost:9200"]
+-----------------------------------------------------------------------------------
+
+
+
+
