@@ -1,1 +1,23 @@
-#
+
+#윈도우2008 이상은 내장된 파워셀에서 무중단 설치/제거
+
+1) winlogbeat 폴더를 profram files 밑에 붙여넣기
+c:\windows\program files\winlogbeat
+
+2) 파워쉘 admin 권한으로 실행
+
+3) 설치
+cd "C:\Program Files\Winlogbeat"
+.\install-service-winlogbeat.ps1
+
+4) 서비스 "winlogbeat" 실행
+
+5) 로그확인
+c:\programdata\winlogbeat\logs
+
+(note) 제거
+cd "C:\Program Files\Winlogbeat"
+.\uninstall-service-winlogbeat.ps1
+
+
+
