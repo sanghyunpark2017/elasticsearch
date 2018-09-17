@@ -4,6 +4,12 @@ cd ~
 curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.4.0-x86_64.rpm
 sudo rpm -vi filebeat-6.4.0-x86_64.rpm
 
+또는
+
+wget http://10.10.63.63:8089/filebeat-6.4.0-x86_64.rpm
+
+
+
 #설치파일 제거
 rm filebeat-6.4.0-x86_64.rpm
 
