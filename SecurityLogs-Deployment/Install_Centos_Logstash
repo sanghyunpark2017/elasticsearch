@@ -9,12 +9,23 @@ cd /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config
 cat << EOF > /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config/logstash.conf
 input {
   beats {
-    port => "5557"
+    port => "5555"
   }
 }
 
 filter {
+  if [type] == "mysecurelog" {
+    mutate {
+      remove_field => [ "beat", "offset", "source" ]
+    }
+  }
+  else if [type] == "mysulog" {
+    mutate {
+      remove_field => [ "beat", "offset", "source" ]
+    }
+  }
 }
+
 
 output {
   elasticsearch {
