@@ -26,13 +26,21 @@ filter {
   }
 }
 
-
 output {
-  elasticsearch {
-    hosts => ["10.10.64.91:9200", "10.10.64.92:9200", "10.10.64.93:9200"]
-    index => "security-linux-%{+yyyy-MM-dd}"
+  if [type] == "mysecurelog" 
+  {
+    elasticsearch {
+      hosts => ["10.10.64.91:9200", "10.10.64.92:9200", "10.10.64.93:9200"]
+      index => "security-linux-secure-%{+yyyy-MM-dd}"
+    }
   }
-#  stdout { codec => rubydebug }
+  else if [type] == "mysulog"
+  {
+    elasticsearch {
+      hosts => ["10.10.64.91:9200", "10.10.64.92:9200", "10.10.64.93:9200"]
+      index => "security-linux-sulog-%{+yyyy-MM-dd}"
+    }
+  }
 }
 EOF
 ------------------------------------------------------------------------------------------------------------------------------------------
@@ -188,9 +196,20 @@ systemctl status haproxy
 
 systemctl enable filebeat
 
-systemctl stop filebeat
-systemctl start filebeat
-systemctl status filebeat
+systemctl stop logstash
+cat  /var/lib/filebeat/registry
+
+echo "[]" > /var/lib/filebeat/registry
+cat  /var/lib/filebeat/registry
+
+
+service filebeat start
+service filebeat status
+tail -f /var/log/filebeat/filebeat
+
+#오브젝트 삭제
+curl -XDELETE http://localhost:9200/security-linux-2018-09-17
+
 
 
 ############################
