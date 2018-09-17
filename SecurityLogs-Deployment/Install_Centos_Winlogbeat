@@ -12,13 +12,34 @@ rm filebeat-6.4.0-x86_64.rpm
 cd /etc/filebeat
 cp filebeat.yml filebeat.yml.org
 
+#filebeat 설정
 
+
+vi /etc/filebeat/filebeat.yml
 -----------------------------------------------------------------------------------
 filebeat.inputs:
-- type: log
-  enabled: false
-  paths:
-    - /var/log/*.log
+  - type: log
+    fields_under_root: true
+    fields:
+      type: mysecurelog
+    encoding: utf-8
+    ignore_older: 1h
+    scan_frequency: 1m
+    clean_inactive: 24h
+    clean_removed: true
+    paths:
+      - /var/log/secure
+  - type: log
+    fields_under_root: true
+    fields:
+      type: mysulog
+    encoding: utf-8
+    ignore_older: 1h
+    scan_frequency: 1m
+    clean_inactive: 24h
+    clean_removed: true
+    paths:
+      - /var/log/sulog
 
 filebeat.config.modules:
   path: ${path.config}/modules.d/*.yml
@@ -26,12 +47,14 @@ filebeat.config.modules:
 
 setup.template.settings:
   index.number_of_shards: 3
-
+  
 setup.kibana:
 
-output.elasticsearch:
-  hosts: ["localhost:9200"]
+output.logstash:
+  hosts:
+  - 10.10.64.99:5557
 -----------------------------------------------------------------------------------
+
 
 
 
