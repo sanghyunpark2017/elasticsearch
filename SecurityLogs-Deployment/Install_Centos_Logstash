@@ -1,2 +1,203 @@
 
-#
+#리눅스용 logstash deployment 디렉토리 생성
+mkdir -p /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config
+cd /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config
+
+
+#리눅스용 logstash 설정파일
+------------------------------------------------------------------------------------------------------------------------------------------
+cat << EOF > /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config/logstash.conf
+input {
+  beats {
+    port => "5557"
+  }
+}
+
+filter {
+}
+
+output {
+  elasticsearch {
+    hosts => ["10.10.64.91:9200", "10.10.64.92:9200", "10.10.64.93:9200"]
+    index => "security-linux-%{+yyyy-MM-dd}"
+  }
+#  stdout { codec => rubydebug }
+}
+EOF
+------------------------------------------------------------------------------------------------------------------------------------------
+
+clear
+ll /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config/logstash.conf
+
+cat /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config/logstash.conf
+
+
+
+
+
+################################
+# kubernetes/logstash(Linux)
+################################
+rm -f /root/logstash-security-linux-deployment.yaml
+
+vi /root/logstash-security-linux-deployment.yaml
+----------------------------------------------------------------------------------------------------------------------------
+#cat << EOF > /root/logstash-security-linux-deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logstash-security-linux-deployment
+  namespace: default
+  labels:
+    app: logstash-security-linux
+    tier: frontend
+    role: making
+    deployment: v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logstash-security-linux
+      tier: frontend
+      role: making
+      deployment: v1
+  template:
+    metadata:
+      labels:
+        app: logstash-security-linux
+        tier: frontend
+        role: making
+        deployment: v1
+    spec:
+      containers:
+      - name: logstash-security-linux-deployment-pod
+        image: reg.hmp.com/logstash-640-security-20180912-0756:latest
+        ports:
+        - containerPort: 5557
+        resources:
+          limits:
+            memory: "2Gi"
+          requests:
+            memory: "1Gi"
+        command: ["/app/logstash-6.4.0/bin/logstash", "-f", "/app/logstash-6.4.0/config/logstash.conf"]
+        volumeMounts:
+        - mountPath: /app/logstash-6.4.0/config/logstash.conf
+          name: name1
+      volumes:
+      - name: name1
+        hostPath:
+          path: /vol/private/logstash-security-linux-deployment/app/logstash-6.4.0/config/logstash.conf
+          type: File
+----------------------------------------------------------------------------------------------------------------------------
+
+kubectl apply -f /root/logstash-security-linux-deployment.yaml
+
+#kubectl delete -f /root/logstash-security-linux-deployment.yaml
+
+
+
+
+
+############################
+# Kubernetes/Service(linux)
+############################
+
+#linux
+--------------------------------------------------------------------------------------
+cat << EOF > /root/logstash-security-linux-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: logstash-security-linux-service
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: logstash-security-linux
+    tier: frontend
+    role: making
+    deployment: v1
+  ports:
+  - name: http
+    protocol: TCP
+    port: 5557
+    nodePort: 32003
+EOF
+--------------------------------------------------------------------------------------
+
+kubectl apply -f /root/logstash-security-linux-service.yaml
+
+#kubectl delete -f /root/logstash-security-linux-service.yaml
+
+
+
+
+
+
+############################
+# HA-Proxy
+############################
+bk /etc/haproxy/haproxy.cfg
+
+vi  /etc/haproxy/haproxy.cfg
+-------------------------------------------------------------------------------------------------------------------------
+### logstash-security-2008-service
+
+frontend logstash-security-2008-service
+  bind *:5555
+  mode tcp
+  option tcplog
+  default_backend logstash-security-2008-service
+
+backend logstash-security-2008-service
+  mode tcp
+  option tcplog
+  option tcp-check
+  balance roundrobin
+  default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+  server t1vkubework1 10.10.64.64:32001 check fall 3 rise 2
+  server t1vkubework2 10.10.64.65:32001 check fall 3 rise 2
+  server t1vkubework3 10.10.64.66:32001 check fall 3 rise 2
+
+
+### logstash-security-2003-service
+
+frontend logstash-security-2003-service
+  bind *:5556
+  mode tcp
+  option tcplog
+  default_backend logstash-security-2003-service
+
+backend logstash-security-2003-service
+  mode tcp
+  option tcplog
+  option tcp-check
+  balance roundrobin
+  default-server inter 10s downinter 5s rise 2 fall 2 slowstart 60s maxconn 250 maxqueue 256 weight 100
+  server t1vkubework1 10.10.64.64:32002 check fall 3 rise 2
+  server t1vkubework2 10.10.64.65:32002 check fall 3 rise 2
+  server t1vkubework3 10.10.64.66:32002 check fall 3 rise 2
+-------------------------------------------------------------------------------------------------------------------------
+
+firewall-cmd --get-default-zone
+firewall-cmd --permanent --zone=public --add-port=5555/tcp
+firewall-cmd --permanent --zone=public --add-port=5556/tcp
+firewall-cmd --reload
+firewall-cmd --list-ports
+
+systemctl stop haproxy
+systemctl start haproxy
+systemctl status haproxy
+
+
+############################
+# Kibana
+############################
+
+#인덱스생성
+security-2008-*
+security-2003-*
+
+
+
+
