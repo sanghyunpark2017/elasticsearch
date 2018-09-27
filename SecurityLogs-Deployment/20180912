@@ -396,7 +396,7 @@ output.logstash:
   hosts: ["10.10.64.99:5555"]
 
 logging.to_files: true
-logging.files:
+logging.files:https://github.com/sanghyunpark2017/ElasticSearch/tree/master/SecurityLogs-Deployment
   path: C:/ProgramData/winlogbeat/Logs
 logging.level: error
 
@@ -418,7 +418,7 @@ htpasswd -c /etc/nginx/ hmplogadm
 
 cat /etc/nginx/.htpasswd
 
-vi /etc/nginx/nginx.conf
+vi /etc/nginx/conf.d/default.conf
 -----------------------------------------------------------------
 server {
   listen *:80;
