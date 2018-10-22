@@ -6,6 +6,71 @@ systemctl disable firewalld
 
 vi /etc/fstab
 
+##불필요한 서비스 중지
+systemctl disable NetworkManager
+systemctl disable firewalld
+systemctl disable postfix
+systemctl disable nfs
+systemctl disable rpcbind
+systemctl disable cgdcbxd
+systemctl disable ibacm
+systemctl disable bluetooth
+systemctl disable ipmidetectd
+systemctl disable systemtap
+systemctl disable abrtd
+
+##IPv6 비활성
+echo "# ipv6 disable " >> /etc/sysctl.conf
+echo "net.ipv6.conf.all.disable_ipv6=1" >> /etc/sysctl.conf
+sysctl -p
+
+
+sysctl net.ipv6.conf.all.disable_ipv6  => "0"이면 활성, "1"이면 비활성
+
+##ulimit 설정
+echo "" >> /etc/security/limits.conf
+echo "" >> /etc/security/limits.conf
+echo "*       hard    nproc   65535" >> /etc/security/limits.conf
+echo "*       soft    nproc   65535" >> /etc/security/limits.conf
+echo "*       hard    nofile  65535" >> /etc/security/limits.conf
+echo "*       soft    nofile  65535" >> /etc/security/limits.conf
+
+cat /etc/security/limits.conf
+
+##vi /etc/hosts
+
+vi /etc/hosts
+----------------------------------------------------------------------------------------
+#####LOCAL
+
+
+#####NKIA ######
+10.10.22.198	K1PNKIA01
+10.10.22.199	K1PNKIA02
+10.10.22.201	K1PNKIA03
+
+### Backup SVR Environment ###
+## Backup Server IP Address ##
+10.10.22.146    k1p09networker
+211.36.88.169   k1p09networker_nat
+10.10.28.25     k1pnetworker02
+10.10.23.90     netsvr
+----------------------------------------------------------------------------------------
+
+
+###bash_profile
+
+cd ~
+sed -i 's/PATH=$PATH:$HOME\/bin/PATH=$PATH:$HOME/g' ./.bash_profile
+cat .bash_profile
+
+
+
+
+
+
+
+
 yum install -y wget curl
 cd /opt/
 wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz"
