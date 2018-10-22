@@ -160,17 +160,31 @@ curl localhost:9200
 ##############################
 # Install Kibana(Master1)
 ##############################
+
 cd ~
-
-
-
-sftp -P 2189 DCinfra@10.10.38.240
-
-
 wget https://artifacts.elastic.co/downloads/kibana/kibana-6.4.0-x86_64.rpm
 shasum -a 512 kibana-6.4.0-x86_64.rpm 
 rpm --install kibana-6.4.0-x86_64.rpm
-`
+
+sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable kibana.service
+
+
+cd /etc/kibana
+bk kibana.yml
+
+cat << EOF > /etc/kibana/kibana.yml
+server.host: 0.0.0.0
+elasticsearch.url: http://10.10.28.42:9200
+EOF
+
+systemctl start kibana
+systemctl status kibana
+
+
+
+
+
 
 
 
