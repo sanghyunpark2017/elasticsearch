@@ -1,0 +1,15 @@
+###################################
+# Docker Hub에 이미지 업로드하기
+###################################
+docker login
+-------------------------------
+Username:ontheterrace73
+Password:**********5
+-------------------------------
+
+#형식: docker tag MYIMAGE ontheterrace73/MYIMAGE
+
+docker tag reg.hmp.com:443/mycentos7-20180928-1541 ontheterrace73/mycentos7-20180928-1541
+docker images
+docker push ontheterrace73/mycentos7-20180928-1541
+
