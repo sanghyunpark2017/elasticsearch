@@ -1,0 +1,10 @@
+3) 아파치시작
+/app/apache24/bin/apachectl start
+
+#실행하면
+/etc/rc.d/init.d/functions: No such file or directory 에러 발생
+
+#설치 후 재시도 OK
+yum install initscripts -y
+
+
