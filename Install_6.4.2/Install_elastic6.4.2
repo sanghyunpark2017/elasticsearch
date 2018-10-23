@@ -1,5 +1,134 @@
 
+###############
+# OS 설치
+###############
 
-#홈페이지에서 RPM파일 다운로드 (elasticsearcr 6.4.2 )
+##디스크 추가 
+/app
 
+##필요없는 데몬 disable
+systemctl disable NetworkManager
+systemctl disable firewalld
+systemctl disable postfix
+systemctl disable nfs
+systemctl disable rpcbind
+systemctl disable cgdcbxd
+systemctl disable ibacm
+systemctl disable bluetooth
+systemctl disable ipmidetectd
+systemctl disable systemtap
+systemctl disable abrtd
+
+##
+sed -i 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/selinux/config
+cat /etc/selinux/config
+
+
+##ip6 disable
+echo "" >> /etc/sysctl.conf
+echo "# ipv6 disable " >> /etc/sysctl.conf
+echo "net.ipv6.conf.all.disable_ipv6=1" >> /etc/sysctl.conf
+sysctl -p
+
+##ulimit 설정
+echo "" >> /etc/security/limits.conf
+echo "" >> /etc/security/limits.conf
+echo "*       hard    nproc   65535" >> /etc/security/limits.conf
+echo "*       soft    nproc   65535" >> /etc/security/limits.conf
+echo "*       hard    nofile  65535" >> /etc/security/limits.conf
+echo "*       soft    nofile  65535" >> /etc/security/limits.conf
+cat /etc/security/limits.conf
+
+
+##vi /etc/hosts
+
+##vi .bash_profile
+$HOME/bin 에서 /bin 삭제
+
+#############################################
+# OpenJDK 1.8 설치
+#############################################
+
+yum install -y wget curl
+cd /opt/
+wget --no-cookies --no-check-certificate --header "Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie" "http://download.oracle.com/otn-pub/java/jdk/8u131-b11/d54c1d3a095b4ff2b6607d096fa80163/jdk-8u131-linux-x64.tar.gz"
+tar xzf jdk-8u131-linux-x64.tar.gz
+cd /opt/jdk1.8.0_131/
+alternatives --install /usr/bin/java java /opt/jdk1.8.0_131/bin/java 2
+alternatives --config java
+
+
+cat << EOF >> /root/.bash_profile
+export JAVA_HOME=/opt/jdk1.8.0_131
+export JRE_HOME=/opt/jdk1.8.0_131/jre
+export PATH=$PATH:/opt/jdk1.8.0_131/bin:/opt/jdk1.8.0_131/jre/bin
+EOF
+
+
+#############################################
+# ElasticSearch 6.4.2 설치
+# 2018년 10월 2일 릴리즈
+#############################################
+
+yum install -y perl-Digest-SHA cur
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.4.2.rpm
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.4.2.rpm.sha512
+shasum -a 512 -c elasticsearch-6.4.2.rpm.sha512 
+sudo rpm --install elasticsearch-6.4.2.rpm
+
+sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable elasticsearch.service
+
+systemctl stop elasticsearch.service
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+
+
+systemctl start elasticsearch.service
+sudo journalctl --unit elasticsearch
+
+curl localhost:9200
+
+#설정은 기존파일을 백업하고
+cd /etc/elasticsearch
+bk elasticsearch.yml
+
+#새로만든다
+cat << EOF > /etc/elasticsearch/elasticsearch.yml
+cluster.name: hmp-security-logs
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+#http.cors.enabled: true
+#http.cors.allow-origin: "*"
+#http.cors.allow-headers: Authorization       #for head & XPACK
+transport.tcp.port: 9300 
+node.master: true
+node.data: true
+node.ingest: true
+path.data: /app/elasticsearch/data
+path.logs: /app/elasticsearch/log
+#index.number_of_shards: 5
+#index.number_of_replicas: 1
+discovery.zen.ping_timeout: 10s
+discovery.zen.ping.unicast.hosts: ["10.10.28.42:9300", "10.10.28.43:9300",  "10.10.28.44:9300"]
+#discovery.zen.minimum_master_nodes: 3  #for 5 nodes 
+discovery.zen.minimum_master_nodes: 2  #for 3 nodes 
+#action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
+EOF
+clear
+cat /etc/elasticsearch/elasticsearch.yml
+
+
+#디렉토리생성
+mkdir -p /app/elasticsearch/data
+mkdir -p /app/elasticsearch/log
+chown elasticsearch:elasticsearch -R /app/elasticsearch
+
+systemctl stop elasticsearch.service
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+
+
+#크롬 헤드에서 클러스터 확인
+curl localhost:9200
 
