@@ -2,5 +2,21 @@
 #고정이미지로 만들고 개인 도커허브에 업로드 함 (영구백업)
 
 
+###Docker Hub에 이미지 업로드하기
+
+docker login
+-------------------------------
+Username:ontheterrace73
+Password:**********5
+-------------------------------
+
+docker tag MYIMAGE ontheterrace73/MYIMAGE
+
+docker push $DOCKER_ID_USER/MYIMAGE
+
+
+
+
+
 
 
