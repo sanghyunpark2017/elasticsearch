@@ -1,0 +1,32 @@
+
+
+#로그온이벤트(4624)에 포함된 Logon Type
+2 : Interactive
+    (logon at keyboard and screen of system) Windows 2000 records Terminal Services logon as this type rather than Type 10.
+3 : Network 
+    (i.e. connection to shared folder on this computer from elsewhere on network or IIS logon - 
+    Never logged by 528 on W2k and forward. See event 540)
+    >>콘솔 또는 원격터미널 로그인
+4 : Batch (i.e. scheduled task)
+5 : Service (Service startup)
+7 : Unlock (i.e. unnattended workstation with password protected screen saver)
+8 : NetworkCleartext 
+    (Logon with credentials sent in the clear text. Most often indicates a logon to IIS with "basic authentication")
+    >>IIS 로그인
+    
+9 : NewCredentials
+10 : RemoteInteractive (Terminal Services, Remote Desktop or Remote Assistance)
+11 : CachedInteractive (logon with cached domain credentials such as when logging on to a laptop when away from the network)
+
+
+[LogonType 유형]
+2 : 대화형 로그인
+(제외)3 : 네트워크 로그인(파일공유 액세스)
+(제외)4 : 스케쥴작업 로그인
+(제외)5 : 서비스계정 로그인(시작)
+(제외)7 : 잠금해제(스크린세이버)
+(제외)8 : IIS로그인(기본인증)
+(제외)9 : NewCredentials
+10 : 원격터미널
+(제외)11 : 캐시된 로그인
+
