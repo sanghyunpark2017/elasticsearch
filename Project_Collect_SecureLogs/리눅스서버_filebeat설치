@@ -1,1 +1,66 @@
-#
+
+#다운로드 및 설치
+cd ~
+curl -L -O https://artifacts.elastic.co/downloads/beats/filebeat/filebeat-6.4.0-x86_64.rpm
+sudo rpm -vi /root/filebeat-6.4.0-x86_64.rpm
+
+또는
+
+wget http://10.10.63.63:8089/filebeat-6.4.0-x86_64.rpm
+
+
+
+#설치파일 제거
+rm /root/filebeat-6.4.0-x86_64.rpm
+
+
+#설정파일 백업
+cd /etc/filebeat
+cp filebeat.yml filebeat.yml.org
+
+#filebeat 설정
+
+rm /etc/filebeat/filebeat.yml
+
+vi /etc/filebeat/filebeat.yml
+-----------------------------------------------------------------------------------
+filebeat.inputs:
+  - type: log
+    fields_under_root: true
+    fields:
+      type: mysecurelog
+    encoding: utf-8
+    ignore_older: 1h
+    scan_frequency: 1m
+    clean_inactive: 24h
+    clean_removed: true
+    paths:
+      - /var/log/secure
+  - type: log
+    fields_under_root: true
+    fields:
+      type: mysulog
+    encoding: utf-8
+    ignore_older: 1h
+    scan_frequency: 1m
+    clean_inactive: 24h
+    clean_removed: true
+    paths:
+      - /var/log/sulog
+
+filebeat.config.modules:
+  path: ${path.config}/modules.d/*.yml
+  reload.enabled: false
+
+setup.template.settings:
+  index.number_of_shards: 3
+  
+setup.kibana:
+
+output.logstash:
+  hosts:
+  - 10.10.64.99:5557
+-----------------------------------------------------------------------------------
+
+
+
