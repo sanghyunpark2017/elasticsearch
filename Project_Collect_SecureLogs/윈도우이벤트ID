@@ -1,0 +1,163 @@
+로그온유형인 숫자를 문자로 바꿔주고, 프로세스 전체이름을 경로와 프로세스이름을 분리함
+http://kangmyounghun.blogspot.com/2017/07/elasticsearch-logon-event.html
+
+
+##################
+#설정가이드
+###################
+#이 여기서 범주와 하위 범주 모든 Windows 7 및 Windows Server 2008 R2 보안 감사 관련 이벤트를 보여 줍니다.
+#범주: 계정 로그온
+
+#하위 범주: 사용자 계정 관리
+4720	사용자 계정을 만들었습니다.
+4722	사용자 계정이 활성화 되었습니다.
+4723	계정의 암호를 변경 하려고 했습니다.
+4724	계정의 암호를 다시 설정 하려고 했습니다.
+4725	사용자 계정을 비활성화 되었습니다.
+4726	사용자 계정이 삭제 되었습니다.
+4738	사용자 계정이 변경 되었습니다.
+4740	사용자 계정이 잠겼습니다.
+4767	사용자 계정 잠금이 해제 되었습니다.
+4781	계정 이름이 변경 되었습니다.
+
+#하위 범주: 로그 오프
+4634	계정을 로그 오프 되었습니다.
+
+#하위 범주 : 로그온
+4624	계정을 성공적으로 로그온 했습니다.
+4625	계정에 로그온 하지 못했습니다.
+4648	명시적 자격 증명을 사용하여 로그온을 시도 했습니다.
+
+################
+#사용하는 로그인ID
+################
+
+4624	계정을 성공적으로 로그온 했습니다.
+4625	계정에 로그온 하지 못했습니다.
+4648	명시적 자격 증명을 사용하여 로그온을 시도 했습니다. (웹서버 경유한 로그인으로 건수가 많아서 제외함)
+4720	사용자 계정을 만들었습니다.
+4726	사용자 계정이 삭제 되었습니다.
+
+
+
+#로그온이벤트(4624)에 포함된 Logon Type
+2 : Interactive
+    (logon at keyboard and screen of system) Windows 2000 records Terminal Services logon as this type rather than Type 10.
+3 : Network 
+    (i.e. connection to shared folder on this computer from elsewhere on network or IIS logon - 
+    Never logged by 528 on W2k and forward. See event 540)
+    >>콘솔 또는 원격터미널 로그인
+4 : Batch (i.e. scheduled task)
+5 : Service (Service startup)
+7 : Unlock (i.e. unnattended workstation with password protected screen saver)
+8 : NetworkCleartext 
+    (Logon with credentials sent in the clear text. Most often indicates a logon to IIS with "basic authentication")
+    >>IIS 로그인
+    
+9 : NewCredentials
+10 : RemoteInteractive (Terminal Services, Remote Desktop or Remote Assistance)
+11 : CachedInteractive (logon with cached domain credentials such as when logging on to a laptop when away from the network)
+
+
+[LogonType 유형]
+2 : 대화형 로그인
+(제외)3 : 네트워크 로그인(파일공유 액세스)
+(제외)4 : 스케쥴작업 로그인
+(제외)5 : 서비스계정 로그인(시작)
+(제외)7 : 잠금해제(스크린세이버)
+(제외)8 : IIS로그인(기본인증)
+(제외)9 : NewCredentials
+10 : 원격터미널
+(제외)11 : 캐시된 로그인
+
+
+
+
+
+##############################
+# 윈도우2008 적용한 이벤트ID
+##############################
+4624    계정을 성공적으로 로그온 했습니다.(2:대화형로그인, 10:원격터미널)
+4625    계정로그온에 실패했습니다.
+4634    계정을 로그 오프 되었습니다.
+4688    프로세스 만들기
+4720    사용자 계정을 만들었습니다.
+4723    계정의 암호를 변경 하려고 했습니다.
+4724    계정의 암호를 다시 설정 하려고 했습니다.
+4725    사용자 계정을 비활성화 되었습니다.
+4726    사용자 계정이 삭제 되었습니다.
+4738    사용자 계정이 변경 되었습니다.
+4740    사용자 계정이 잠겼습니다.
+4767    사용자 계정 잠금이 해제 되었습니다.
+4781    계정 이름이 변경 되었습니다.
+
+
+4715    개체 감사 정책(SACL) 변경 되었습니다.
+4719    시스템 감사 정책이 변경 되었습니다.
+4817    개체에 대한 감사 설정은 변경했습니다.
+4907    개체에 대한 감사 설정은 변경했습니다.
+4739    도메인 정책이 변경 되었습니다.
+
+#위 외에 기타 이벤트ID 설명 URL
+https://support.microsoft.com/ko-kr/help/977519/description-of-security-events-in-windows-7-and-in-windows-server-2008
+
+(보류)4689     프로세스를 끝냈습니다.
+
+
+##############################
+# 윈도우2008 일부 상세코드 설명
+##############################
+
+#부연설명: 4624 성공적인 로그온
+2 : 대화형 로그인
+(제외)3 : 네트워크 로그인(파일공유 액세스)
+(제외)4 : 스케쥴작업 로그인
+(제외)5 : 서비스계정 로그인(시작)
+(제외)7 : 잠금해제(스크린세이버)
+(제외)8 : IIS로그인(기본인증)
+(제외)9 : NewCredentials
+10 : 원격터미널
+(제외)11 : 캐시된 로그인
+
+
+#부연설명: 4688    프로세스 만들기
+-(예외)C:\Program Files\NKIA\NNPAgent\SMSAgent
+-(예외)C:\Windows\Syste32\conhost.exe
+-(예외)C:\Windows\SysWOW64\cmd.exe
+
+#부연설명: 4625  계정로그온에 실패했습니다.
+Status and Sub Status Codes	Description (not checked against "Failure Reason:") 
+0xC0000064	user name does not exist
+0xC000006A	user name is correct but the password is wrong
+0xC0000234	user is currently locked out
+0xC0000072	account is currently disabled
+0xC000006F	user tried to logon outside his day of week or time of day restrictions
+0xC0000070	workstation restriction, or Authentication Policy Silo violation (look for event ID 4820 on domain controller)
+0xC0000193	account expiration
+0xC0000071	expired password
+0xC0000133	clocks between DC and other computer too far out of sync
+0xC0000224	user is required to change password at next logon
+0xC0000225	evidently a bug in Windows and not a risk
+0xc000015b	The user has not been granted the requested logon type (aka logon right) at this machine
+
+
+
+
+
+###############
+# 이슈사항
+###############
+
+#4688 프로세스만들기
+-NKIA, dllhost 등 가 수시로 프로세스 생성되는 것들이 많음
+-필터링 불가(winlogbeat 프로세스 이름 와일드카드 인식하지 않음)
+
+
+
+
+
+
+
+
+
+
