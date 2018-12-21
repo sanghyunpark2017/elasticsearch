@@ -39,8 +39,12 @@ PUT /appinfo
 #구성관리DB에서 데이터 로드(어플리케이션목록)
 ###############################################
 
-cd /usr/share/logstash/bin
+cd ~ 
+wget http://10.10.63.63:8089/sqljdbc_6.0.8112.100_kor.tar.gz
+tar -xvf sqljdbc_6.0.8112.100_kor.tar.gz
 
+
+cd /usr/share/logstash/bin
 vi  logstash-mssql-applist.conf
 --------------------------------------------------------------------------------------------------------------------------------------------
 input {
