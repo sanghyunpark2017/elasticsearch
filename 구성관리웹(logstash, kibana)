@@ -5,6 +5,34 @@ ELK로 넘어가면서 datatime으로 인식되어 문자데이터 오류가 발
 MSSQL에서 문자제거 하거나 elk document에서 먼저 텍스트로 정의 후 데이터를 넘겨야 함
 
 
+###############################################
+#도큐먼트 속성 정의
+###############################################
+PUT /appinfo
+{
+  "mappings": {
+    “my_appinfo": {
+      "properties": {
+          "category1": {"type":"text"},
+          "category2": {"type": "text"},
+          "category3": {"type": "text"},
+          "app_pkg": {"type": "text"},
+          "nost_nm,": {"type":"text"},
+          "hw_use": {"type": "text"},
+          "usage": {"type": "text"},
+          "os": {"type": "text"},
+          "os_ver": {"type": "text"},
+          "hw_type": {"type": "text"},
+          "hw_de,": {"type":"text"},
+          "maker": {"type": "text"},
+          "model_nm": {"type": "text"},
+          "os_install": {"type": "text"},
+          "wrnt" : {"type" :"date"}
+      }
+    }
+  }
+}
+
 
 
 ###############################################
@@ -32,17 +60,63 @@ output {
   elasticsearch {
   "hosts" => ["10.10.62.93:9200"]
   "index" => "applications"
-  #"document_type" => "data"
+  "document_type" => "my_appinfo"
 }
-#  stdout { codec => rubydebug }
+
 }
 --------------------------------------------------------------------------------------------------------------------------------------------
 
-#기존 document "applications" 삭제
-curl -XDELETE http://localhost:9200/applications*
+/app/logstash-6.4.2/bin/logstash -f /root/logstash-mssql-applist.conf
 
-#데이터전송(MSSQL -> Elasticsearch)
-./logstash -f ./logstash-mssql-applist.conf
+
+###############################################
+#graph에서 사용 할 필드 fileddata = true 설정
+###############################################
+-인덱스생성이름 : applications*
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "category1": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "category2": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "category3": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "node_nm": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+
+
+
 
 
 
@@ -103,6 +177,9 @@ vir_nm="NTNX8k-Homeplus Cluster (운영)"
 ############################
 #Graph 생성1  
 ############################
+
+!!! Graph 검색창에 처음에 *을 넣어줘야 표시됨
+
 
 #app_category_all
 index : applications*
