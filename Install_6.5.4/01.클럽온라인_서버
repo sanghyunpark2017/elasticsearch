@@ -39,6 +39,8 @@ sudo journalctl --unit elasticsearch
 
 curl localhost:9200
 
+systemctl stop elasticsearch.service
+
 
 #설정은 기존파일을 백업하고
 cd /etc/elasticsearch
@@ -76,7 +78,7 @@ mkdir -p /data/elasticsearch/data
 mkdir -p /data/elasticsearch/log
 chown elasticsearch:elasticsearch -R /data/elasticsearch
 
-systemctl stop elasticsearch.service
+#재시작
 systemctl start elasticsearch.service
 systemctl status elasticsearch.service
 
