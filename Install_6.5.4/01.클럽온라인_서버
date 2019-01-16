@@ -83,7 +83,7 @@ systemctl start elasticsearch.service
 systemctl status elasticsearch.service
 
 
-#크롬 헤드에서 클러스터 확인
+#로컬 테스트
 curl localhost:9200
 
 #3대 모두 설치했으면 크롬 헤드에서 클러스터 확인
