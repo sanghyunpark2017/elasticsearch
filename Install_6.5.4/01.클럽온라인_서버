@@ -44,7 +44,7 @@ systemctl stop elasticsearch.service
 
 #설정은 기존파일을 백업하고
 cd /etc/elasticsearch
-mv elasticsearch.yml  elasticsearch.yml.org
+bk elasticsearch.yml
 
 
 #새로만든다
