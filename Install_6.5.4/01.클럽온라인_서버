@@ -59,8 +59,8 @@ transport.tcp.port: 9300
 node.master: true
 node.data: true
 node.ingest: true
-path.data: /data/elasticsearch/data
-path.logs: /data/elasticsearch/log
+path.data: /app/elasticsearch/data
+path.logs: /app/elasticsearch/log
 #index.number_of_shards: 5
 #index.number_of_replicas: 1
 discovery.zen.ping_timeout: 10s
@@ -74,9 +74,9 @@ cat /etc/elasticsearch/elasticsearch.yml
 
 
 #디렉토리생성
-mkdir -p /data/elasticsearch/data
-mkdir -p /data/elasticsearch/log
-chown elasticsearch:elasticsearch -R /data/elasticsearch
+mkdir -p /app/elasticsearch/data
+mkdir -p /app/elasticsearch/log
+chown elasticsearch:elasticsearch -R /app/elasticsearch
 
 #재시작
 systemctl start elasticsearch.service
