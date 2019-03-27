@@ -1,1 +1,117 @@
 #
+#############################################
+#이전 버전 삭제
+#############################################
+
+systemctl stop elasticsearch.service
+rpm -qa | grep elasticsearch
+rpm -e elasticsearch-6.6.0-1.noarch
+
+
+rm -rf /app/elasticsearch
+rm -rf /etc/elasticsearch
+
+
+#############################################
+Version: 6.7.0
+Release date: 2019년 03월 27일 수요일
+설치날짜 : 2019년 03월 27일 수요일
+#############################################
+
+
+
+#############################################
+# OpenJDK 1.8 설치
+#############################################
+
+yum install -y java-1.8.0-openjdk-devel.x86_64
+
+java -version
+
+#############################################
+# ElasticSearch 6.5.4 설치
+#############################################
+
+
+(root)
+cd /app
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.rpm
+wget https://artifacts.elastic.co/downloads/elasticsearch/elasticsearch-6.7.0.rpm.sha512
+shasum -a 512 -c elasticsearch-6.7.0.rpm.sha512 
+
+sudo rpm --install elasticsearch-6.7.0.rpm
+
+sudo /bin/systemctl daemon-reload
+sudo /bin/systemctl enable elasticsearch.service
+
+systemctl enable elasticsearch.service
+systemctl stop elasticsearch.service
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+
+
+sudo journalctl --unit elasticsearch
+
+#로컬 테스트(약 20초 후에 응답, loopback으로 리슨했다고 allip로 리슨에 소요)
+curl localhost:9200
+
+systemctl stop elasticsearch.service
+
+
+#설정은 기존파일을 백업하고
+cd /etc/elasticsearch
+bk elasticsearch.yml
+
+
+#새로만든다
+cat << EOF > /etc/elasticsearch/elasticsearch.yml
+cluster.name: hmp-co-logs
+node.name: ${HOSTNAME}
+network.host: 0.0.0.0
+#http.cors.enabled: true
+#http.cors.allow-origin: "*"
+#http.cors.allow-headers: Authorization       #for head & XPACK
+transport.tcp.port: 9300 
+node.master: true
+node.data: true
+node.ingest: true
+path.data: /app/elasticsearch/data
+path.logs: /app/elasticsearch/log
+#index.number_of_shards: 5
+#index.number_of_replicas: 1
+discovery.zen.ping_timeout: 10s
+discovery.zen.ping.unicast.hosts: ["10.10.62.130:9300", "10.10.62.131:9300",  "10.10.62.132:9300"]
+#discovery.zen.minimum_master_nodes: 3  #for 5 nodes 
+discovery.zen.minimum_master_nodes: 2  #for 3 nodes 
+#action.auto_create_index: .security,.monitoring*,.watches,.triggered_watches,.watcher-history*,.ml*
+EOF
+clear
+cat /etc/elasticsearch/elasticsearch.yml
+
+
+#디렉토리생성
+mkdir -p /app/elasticsearch/data
+mkdir -p /app/elasticsearch/log
+chown elasticsearch:elasticsearch -R /app/elasticsearch
+
+#재시작
+systemctl start elasticsearch.service
+systemctl status elasticsearch.service
+
+ 
+
+#로컬 테스트(약 20초 후에 응답)
+curl localhost:9200
+
+
+#3대 모두 설치했으면 크롬 헤드에서 클러스터 확인
+http://10.10.62.130:9200
+http://10.10.62.131:9200
+http://10.10.62.132:9200
+
+
+#파일정리
+rm -f /app/elasticsearch-6.6.0.rpm
+rm -f /app/elasticsearch-6.6.0.rpm.sha512
+
+
