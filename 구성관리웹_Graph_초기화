@@ -81,7 +81,7 @@ put applications*/_mapping/my_appinfo
 put applications*/_mapping/my_appinfo
 {
       "properties": {
-        "node_nm": {
+        "nost_nm": {
         "type": "text",
         "fielddata": true
        }
