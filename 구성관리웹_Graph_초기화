@@ -1,1 +1,64 @@
-#
+
+
+#서버목록
+-k1velastic1(10.10.62.93)
+-k1velastic2(10.10.62.94)
+-k1velastic3(10.10.62.95)
+
+#############################
+#Step1. elasticSearch초기화
+#############################
+
+systemctl stop elasticsearch
+
+rm -rf /app/elasticsearch/data
+rm -rf /app/elasticsearch/log
+
+mkdir -p /app/elasticsearch/data
+mkdir -p /app/elasticsearch/log
+chown -R elasticsearch:elasticsearch /app/elasticsearch
+
+systemctl start elasticsearch
+
+
+#############################
+#Step2. kibana설치
+#############################
+cd /app
+rpm -ivh kibana-6.7.0-x86_64.rpm
+
+cat << EOF > /etc/kibana/kibana.yml
+server.host: 0.0.0.0
+elasticsearch.url: http://10.10.62.93:9200
+EOF
+
+systemctl enable kibana
+systemctl start kibana
+systemctl status kibana
+
+#############################
+#Step3. data로드
+#############################
+/root/get_applist.sh
+
+
+#############################
+#Step4. kibana 초기접속
+#############################
+
+
+1)management > license management > trial 30일 선택
+
+2)management > index management > applications 생성
+
+3)graph > applications 선택 > settings > significant links 해제 / certainty 3을 1로 변경 
+
+4)+ 눌러서 
+-category1(10), category2(50), category3(90)
+-category3(20), nost_nm(99)
+
+
+
+
+
+
