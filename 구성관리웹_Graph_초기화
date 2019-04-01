@@ -42,9 +42,59 @@ systemctl status kibana
 /root/get_applist.sh
 
 
+
+###############################################
+#graph에서 사용 할 필드 fileddata = true 설정
+###############################################
+-인덱스생성이름 : applications*
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "category1": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "category2": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "category3": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+put applications*/_mapping/my_appinfo
+{
+      "properties": {
+        "node_nm": {
+        "type": "text",
+        "fielddata": true
+       }
+   }
+}
+
+
+
+
 #############################
-#Step4. kibana 초기접속
+#Step4. kibana 
 #############################
+
 
 
 1)management > license management > trial 30일 선택
